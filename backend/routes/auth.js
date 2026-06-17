@@ -45,6 +45,32 @@ function login(req, res, readBodyWithLimit, checkLoginRateLimit) {
   });
 }
 
+// ========== POST /api/auth/change-password
+function changePassword(req, res, readBodyWithLimit) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    sendJson(res, 401, { success: false, message: '未登录' });
+    return;
+  }
+  const token = authHeader.slice(7);
+  const userId = authService.getCurrentUser(token)?.id;
+  if (!userId) {
+    sendJson(res, 401, { success: false, message: 'token无效' });
+    return;
+  }
+  return readBodyWithLimit(req).then(body => {
+    try {
+      const data = JSON.parse(body);
+      const result = authService.changePassword(userId, data.oldPassword, data.newPassword);
+      sendJson(res, result.success ? 200 : 400, result);
+    } catch (e) {
+      sendJson(res, 500, { success: false, message: '修改密码失败' });
+    }
+  }).catch(e => {
+    sendJson(res, 413, { success: false, message: e.message || '请求体过大' });
+  });
+}
+
 // ========== POST /api/admin/login
 function adminLogin(req, res, readBodyWithLimit, ADMIN_TOKEN, checkLoginRateLimit) {
   const clientIp = req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || req.socket.remoteAddress || 'unknown';
@@ -68,4 +94,4 @@ function adminLogin(req, res, readBodyWithLimit, ADMIN_TOKEN, checkLoginRateLimi
   });
 }
 
-module.exports = { register, login, adminLogin };
+module.exports = { register, login, changePassword, adminLogin };

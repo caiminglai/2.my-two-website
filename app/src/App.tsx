@@ -15,9 +15,9 @@ const MyPostsPage = lazy(() => import('./pages/MyPostsPage'))
 const SettingsPage = lazy(() => import('./pages/SettingsPage'))
 const CirclesPage = lazy(() => import('./pages/CirclesPage'))
 const CircleDetailPage = lazy(() => import('./pages/CircleDetailPage'))
-const MessagesPage = lazy(() => import('./pages/MessagesPage'))
+const AntiFraudPage = lazy(() => import('./pages/AntiFraudPage'))
 
-const HIDE_TAB_PATHS = ['/login', '/deploy', '/qr', '/messages']
+const HIDE_TAB_PATHS = ['/login', '/deploy', '/qr']
 
 // 加载占位符组件 - 骨架屏风格
 function LoadingFallback() {
@@ -78,8 +78,7 @@ export default function App() {
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/circles" element={<CirclesPage />} />
             <Route path="/circle/:circleKey/:tag" element={<CircleDetailPage />} /> 
-            <Route path="/messages" element={<MessagesPage />} />
-            <Route path="/messages/:userId" element={<MessagesPage />} />
+            <Route path="/anti-fraud" element={<AntiFraudPage />} />
           </Routes>
         </Suspense>
       </ErrorBoundary>

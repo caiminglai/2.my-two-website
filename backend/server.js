@@ -19,12 +19,10 @@ if (fs.existsSync(envFile)) {
       }
     }
   });
-  console.log('已加载环境变量:', envFile);
 }
 
 // ========== 统一管理员密码（从 ADMIN_PASSWORD 读取，兼容 .env） ==========
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'your_admin_password';
-console.log('管理员密码已加载');
 
 // ========== 从独立文件加载管理后台HTML ==========
 const ADMIN_HTML = fs.readFileSync(path.join(__dirname, 'admin', 'login.html'), 'utf8');
@@ -56,7 +54,6 @@ const ratingRoutes = require('./routes/ratings.js');
 const reportRoutes = require('./routes/reports.js');
 const uploadRoutes = require('./routes/upload.js');
 const paymentRoutes = require('./routes/payment.js');
-const messageRoutes = require('./routes/messages.js');
 
 // 初始化支付配置
 paymentRoutes.initConfig(process.env);
@@ -199,7 +196,7 @@ const server = http.createServer((req, res) => {
       if (k) cookies[k] = v.join('=');
     });
     if (!cookies.admin_token || cookies.admin_token !== ADMIN_PASSWORD) {
-      res.writeHead(302, {'Location': '/jzxr/admin'}); res.end(); return;
+      res.writeHead(302, {'Location': '/jzxr/admin/'}); res.end(); return;
     }
     res.writeHead(200, {'Content-Type': 'text/html; charset=utf-8'}); res.end(MAIN_HTML); return;
   }
@@ -207,12 +204,20 @@ const server = http.createServer((req, res) => {
   // 管理后台静态文件
   if (req.method === 'GET' && pathname.startsWith('/admin/')) {
     const filePath = path.join(__dirname, 'admin', path.basename(pathname));
-    if (fs.existsSync(filePath)) {
-      const ext = path.extname(filePath).toLowerCase();
-      const mimeTypes = { '.css': 'text/css', '.js': 'application/javascript', '.html': 'text/html' };
-      res.writeHead(200, {'Content-Type': (mimeTypes[ext] || 'application/octet-stream') + '; charset=utf-8'});
-      fs.createReadStream(filePath).pipe(res);
-    } else { res.writeHead(404); res.end('Not Found'); }
+    fs.readFile(filePath, function(err, data){
+      if (err) {
+        res.writeHead(404); res.end('Not Found');
+      } else {
+        const ext = path.extname(filePath).toLowerCase();
+        const mimeTypes = { '.css': 'text/css', '.js': 'application/javascript', '.html': 'text/html', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif' };
+        res.writeHead(200, {
+          'Content-Type': (mimeTypes[ext] || 'application/octet-stream') + '; charset=utf-8',
+          'Content-Length': data.length,
+          'Cache-Control': 'no-cache'
+        });
+        res.end(data);
+      }
+    });
     return;
   }
 
@@ -392,6 +397,9 @@ const server = http.createServer((req, res) => {
   if (req.method === 'POST' && pathname === '/api/auth/login') {
     authRoutes.login(req, res, readBodyWithLimit, checkLoginRateLimit); return;
   }
+  if (req.method === 'POST' && pathname === '/api/auth/change-password') {
+    authRoutes.changePassword(req, res, readBodyWithLimit); return;
+  }
   if (req.method === 'POST' && (pathname === '/api/admin/login' || pathname === '/api/admin')) {
     authRoutes.adminLogin(req, res, readBodyWithLimit, ADMIN_PASSWORD, checkLoginRateLimit); return;
   }
@@ -525,22 +533,11 @@ const server = http.createServer((req, res) => {
   if (req.method === 'POST' && pathname === '/api/payment/notify-alipay') {
     paymentRoutes.alipayNotify(req, res, readBodyWithLimit); return;
   }
+  if (req.method === 'GET' && pathname === '/api/payment/mock-pay') {
+    paymentRoutes.mockPay(req, res, parsedUrl); return;
+  }
   if (req.method === 'GET' && pathname === '/api/payment/status') {
     paymentRoutes.queryPaymentStatus(req, res, parsedUrl); return;
-  }
-
-  // --- 消息 ---
-  if (req.method === 'POST' && pathname === '/api/message/send') {
-    messageRoutes.handleSendMessage(req, res); return;
-  }
-  if (req.method === 'GET' && pathname === '/api/message/conversations') {
-    messageRoutes.handleGetConversations(req, res); return;
-  }
-  if (req.method === 'GET' && pathname === '/api/message/list') {
-    messageRoutes.handleGetMessages(req, res); return;
-  }
-  if (req.method === 'GET' && pathname === '/api/message/unread') {
-    messageRoutes.handleGetUnreadCount(req, res); return;
   }
 
   // --- 自定义筛选字段 ---
@@ -612,5 +609,5 @@ const server = http.createServer((req, res) => {
 
 const PORT = process.env.PORT || 8080;
 server.listen(PORT, () => {
-  console.log('后端运行在端口', PORT);
+  // server is running
 });

@@ -18,8 +18,19 @@ function submitReport(token, reportedId, reportType, description, proofPath) {
   if (!reportedId || !reportType) {
     return { success: false, message: '缺少参数' };
   }
-  reportsDb.addReport(users[0].id, reportedId, reportType, description, proofPath);
-  return { success: true };
+  const targetUser = userDb.getUserById(reportedId);
+  if (!targetUser) {
+    return { success: false, message: '被举报用户不存在' };
+  }
+  if (reportedId === users[0].id) {
+    return { success: false, message: '不能举报自己' };
+  }
+  try {
+    reportsDb.addReport(users[0].id, reportedId, reportType, description, proofPath);
+    return { success: true, message: '举报成功' };
+  } catch (e) {
+    return { success: false, message: '举报失败：' + (e.message || '数据库错误') };
+  }
 }
 
 function getAllReportsForAdmin(status) {

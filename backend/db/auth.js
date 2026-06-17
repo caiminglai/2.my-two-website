@@ -36,6 +36,12 @@ function getAuthUserById(id) {
   return stmt.get(id) || null;
 }
 
+function getAuthUserByIdWithPassword(id) {
+  const database = getDb();
+  const stmt = database.prepare('SELECT id, phone, password, nickname, created_at, last_login FROM auth_users WHERE id = ?');
+  return stmt.get(id) || null;
+}
+
 function updateAuthUserPassword(userId, newPassword) {
   const database = getDb();
   const salt = Math.random().toString(36).substring(2, 10);
@@ -48,5 +54,6 @@ module.exports = {
   createAuthUser,
   verifyAuthUser,
   getAuthUserById,
+  getAuthUserByIdWithPassword,
   updateAuthUserPassword
 };

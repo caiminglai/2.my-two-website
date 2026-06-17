@@ -177,13 +177,14 @@ function deleteUser(id, ownerUserId, isAdmin = false) {
   const database = getDb();
   const user = database.prepare('SELECT user_id FROM users WHERE id = ?').get(id);
   if (!user) return false;
-  if (isAdmin) {
-    const stmt = database.prepare('DELETE FROM users WHERE id = ?');
-    stmt.run(id);
-    return true;
+  if (!isAdmin) {
+    if (!user.user_id) return false;
+    if (user.user_id !== ownerUserId) return false;
   }
-  if (!user.user_id) return false;
-  if (user.user_id !== ownerUserId) return false;
+  // 清理外键关联数据
+  database.prepare('DELETE FROM user_ratings WHERE rater_id = ? OR rated_id = ?').run(id, id);
+  database.prepare('DELETE FROM user_reports WHERE reporter_id = ? OR reported_id = ?').run(id, id);
+  database.prepare('DELETE FROM messages WHERE from_user_id = ? OR to_user_id = ?').run(id, id);
   const stmt = database.prepare('DELETE FROM users WHERE id = ?');
   stmt.run(id);
   return true;
@@ -345,6 +346,12 @@ function getAuthUserById(id) {
   return stmt.get(id) || null;
 }
 
+function getAuthUserByIdWithPassword(id) {
+  const database = getDb();
+  const stmt = database.prepare('SELECT id, phone, password, nickname, created_at, last_login FROM auth_users WHERE id = ?');
+  return stmt.get(id) || null;
+}
+
 function updateAuthUserPassword(userId, newPassword) {
   const database = getDb();
   const salt = Math.random().toString(36).substring(2, 10);
@@ -457,6 +464,7 @@ module.exports = {
   createAuthUser,
   verifyAuthUser,
   getAuthUserById,
+  getAuthUserByIdWithPassword,
   updateAuthUserPassword,
   getAdminPassword,
   setAdminPassword,

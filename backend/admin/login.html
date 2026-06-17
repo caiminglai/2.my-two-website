@@ -65,7 +65,7 @@ document.getElementById('loginBtn').onclick=function(){
         if(d.success && d.token){
           localStorage.setItem('admin_token',d.token);
           document.cookie='admin_token='+d.token+';path=/;max-age=86400;SameSite=Lax';
-          window.location.href='/jzxr/admin/main';
+          window.location.href='/jzxr/admin/main/';
         }else{err.textContent='密码错误呀~';}
       }else{err.textContent='登录失败呢~';}
     }

@@ -53,13 +53,17 @@ function addReport(req, res) {
           const boundaryStart = body.indexOf(boundaryBuf, pos);
           if (boundaryStart === -1) break;
           pos = boundaryStart + boundaryBuf.length;
-          
+
+          // 检查是否为结束边界 --boundary--
+          if (body[pos] === 0x2D && body[pos + 1] === 0x2D) break;
+
           const headerStart = body.indexOf(crlf, pos) + 2;
           const headerEnd = body.indexOf(Buffer.from('\r\n\r\n'), pos) + 4;
-          if (headerStart < 4 || headerEnd < 4) { pos = headerEnd; continue; }
-          
+          // 跳过无效边界，避免死循环
+          if (headerStart < 4 || headerEnd < 4) { pos = boundaryStart + 1; continue; }
+
           const header = body.slice(headerStart, headerEnd - 4).toString('utf-8');
-          
+
           if (header.includes('filename=')) {
             const fnMatch = header.match(/filename="([^"]+)"/);
             if (fnMatch && fnMatch[1]) {

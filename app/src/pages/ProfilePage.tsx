@@ -179,7 +179,6 @@ export default function ProfilePage() {
         alert(errorData.message || '上传失败，请重试');
       }
     } catch (e) {
-      console.error('上传错误:', e);
       alert('网络错误，请检查网络连接后重试');
     } finally {
       setUploading(false);

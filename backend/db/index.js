@@ -218,6 +218,51 @@ function initTables() {
   database.exec('CREATE INDEX IF NOT EXISTS idx_messages_to ON messages(to_user_id)');
   database.exec('CREATE INDEX IF NOT EXISTS idx_messages_status ON messages(status)');
 
+  // 迁移：如果 messages 表的外键指向 users，则重建为指向 auth_users
+  try {
+    const fkList = database.prepare("PRAGMA foreign_key_list(messages)").all();
+    const hasWrongFk = fkList.some(fk => fk.table === 'users');
+    if (hasWrongFk) {
+      try {
+        database.exec(`
+          CREATE TABLE messages_new (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            from_user_id TEXT NOT NULL,
+            to_user_id TEXT NOT NULL,
+            content TEXT NOT NULL,
+            status TEXT DEFAULT 'sent',
+            created_at INTEGER NOT NULL,
+            read_at INTEGER,
+            FOREIGN KEY (from_user_id) REFERENCES auth_users(id),
+            FOREIGN KEY (to_user_id) REFERENCES auth_users(id)
+          );
+          INSERT INTO messages_new (id, from_user_id, to_user_id, content, status, created_at, read_at)
+            SELECT id, from_user_id, to_user_id, content, status, created_at, read_at FROM messages;
+          DROP TABLE messages;
+          ALTER TABLE messages_new RENAME TO messages;
+        `);
+      } catch (copyErr) {
+        // 旧数据无法迁移时直接清空重建
+        database.exec('DROP TABLE IF EXISTS messages');
+        database.exec(`
+          CREATE TABLE messages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            from_user_id TEXT NOT NULL,
+            to_user_id TEXT NOT NULL,
+            content TEXT NOT NULL,
+            status TEXT DEFAULT 'sent',
+            created_at INTEGER NOT NULL,
+            read_at INTEGER,
+            FOREIGN KEY (from_user_id) REFERENCES auth_users(id),
+            FOREIGN KEY (to_user_id) REFERENCES auth_users(id)
+          )
+        `);
+      }
+    }
+  } catch (e) {
+    // 忽略迁移失败，避免启动崩溃
+  }
+
   database.exec(`
     CREATE TABLE IF NOT EXISTS custom_filters (
       id INTEGER PRIMARY KEY AUTOINCREMENT,

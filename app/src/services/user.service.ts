@@ -17,13 +17,14 @@ import {
 
 const LS_ROWS = 'match_rows';
 const LS_COLUMNS = 'match_columns';
-const DATA_VERSION = 'v4';
+const DATA_VERSION = 'v6';
 
 function checkVersion(): void {
   const stored = localStorage.getItem('match_version');
   if (stored !== DATA_VERSION) {
     localStorage.removeItem(LS_ROWS);
-    localStorage.removeItem(LS_COLUMNS);
+    // 不清空 match_columns：让 loadColumns 的合并逻辑自动修正默认字段，
+    // 同时保留用户自定义字段和已建立的条件。
     localStorage.setItem('match_version', DATA_VERSION);
   }
 }
@@ -96,7 +97,7 @@ export function saveRows(rows: Row[]) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(rows)
     });
-  } catch (e) { console.error('批量同步失败:', e); }
+  } catch (e) { /* ignored */ }
 }
 
 export async function syncRowsFromServer(): Promise<Row[]> {
@@ -127,58 +128,78 @@ export async function syncRowsFromServer(): Promise<Row[]> {
       localStorage.setItem(LS_ROWS, JSON.stringify(cleaned));
       return cleaned;
     }
-  } catch (e) { console.error('从服务器同步数据失败:', e); }
+  } catch (e) { /* ignored */ }
   return [];
 }
+
+const DEFAULT_COLUMNS: Column[] = [
+  { key: 'purpose', label: '目的', type: 'select', options: PURPOSE_OPTIONS, category: '基本' },
+  { key: 'name', label: '昵称', type: 'text', category: '基本' },
+  { key: 'gender', label: '性别', type: 'select', options: GENDER_OPTIONS, category: '基本' },
+  { key: 'age', label: '年龄', type: 'text', category: '基本' },
+  { key: 'height', label: '身高(cm)', type: 'text', category: '基本' },
+  { key: 'weight', label: '体重(kg)', type: 'text', category: '基本' },
+  { key: 'city', label: '城市', type: 'select', options: CITY_OPTIONS, category: '基本' },
+
+  { key: 'skinTone', label: '肤色', type: 'select', options: SKIN_TONE_OPTIONS, category: '外貌' },
+  { key: 'faceType', label: '脸型', type: 'select', options: FACE_TYPE_OPTIONS, category: '外貌' },
+  { key: 'eyeType', label: '眼型', type: 'select', options: EYE_TYPE_OPTIONS, category: '外貌' },
+  { key: 'mouthType', label: '嘴型', type: 'select', options: MOUTH_TYPE_OPTIONS, category: '外貌' },
+  { key: 'bodyType', label: '身材', type: 'select', options: BODY_TYPE_OPTIONS, category: '外貌' },
+
+  { key: 'zodiac', label: '星座', type: 'select', options: ZODIAC_OPTIONS, category: '属性' },
+  { key: 'bloodType', label: '血型', type: 'select', options: BLOOD_TYPE_OPTIONS, category: '属性' },
+  { key: 'marriage', label: '婚姻', type: 'select', options: MARRIAGE_OPTIONS, category: '属性' },
+  { key: 'children', label: '子女', type: 'select', options: CHILDREN_OPTIONS, category: '属性' },
+  { key: 'education', label: '学历', type: 'select', options: EDUCATION_OPTIONS, category: '属性' },
+  { key: 'job', label: '职业', type: 'text', category: '属性' },
+  { key: 'income', label: '年收入', type: 'select', options: INCOME_OPTIONS, category: '属性' },
+  { key: 'house', label: '住房', type: 'select', options: HOUSE_OPTIONS, category: '属性' },
+  { key: 'car', label: '购车', type: 'select', options: CAR_OPTIONS, category: '属性' },
+
+  { key: 'personality', label: '性格', type: 'select', options: PERSONALITY_OPTIONS, category: '个性' },
+  { key: 'smoke', label: '吸烟', type: 'select', options: SMOKE_OPTIONS, category: '个性' },
+  { key: 'drink', label: '饮酒', type: 'select', options: DRINK_OPTIONS, category: '个性' },
+  { key: 'religion', label: '宗教信仰', type: 'select', options: RELIGION_OPTIONS, category: '个性' },
+  { key: 'pet', label: '宠物', type: 'select', options: PET_OPTIONS, category: '个性' },
+
+  { key: 'hobbies', label: '兴趣爱好', type: 'tags', options: HOBBY_OPTIONS, category: '兴趣' },
+  { key: 'food', label: '美食偏好', type: 'tags', options: FOOD_OPTIONS, category: '兴趣' },
+  { key: 'sport', label: '运动爱好', type: 'tags', options: SPORT_OPTIONS, category: '兴趣' },
+  { key: 'music', label: '音乐偏好', type: 'tags', options: MUSIC_OPTIONS, category: '兴趣' },
+  { key: 'interestTags', label: '兴趣标签', type: 'tags', options: [...HOBBY_OPTIONS, ...SPORT_OPTIONS], category: '兴趣' },
+
+  { key: 'expectation', label: '期望', type: 'text', category: '其他' },
+  { key: 'contact', label: '联系方式', type: 'text', category: '其他' },
+];
 
 export function loadColumns(): Column[] {
   checkVersion();
 
   try {
     const raw = localStorage.getItem(LS_COLUMNS);
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const saved: Column[] = JSON.parse(raw);
+      if (Array.isArray(saved) && saved.length > 0) {
+        // 与默认列配置合并，默认配置优先，防止旧缓存中的错误 options/type/category 覆盖正确值
+        const merged = saved.map(savedCol => {
+          const defaultCol = DEFAULT_COLUMNS.find(c => c.key === savedCol.key);
+          if (!defaultCol) return savedCol;
+          return {
+            ...defaultCol,
+            ...savedCol,
+            type: defaultCol.type,
+            category: defaultCol.category,
+            options: defaultCol.options,
+          };
+        });
+        localStorage.setItem(LS_COLUMNS, JSON.stringify(merged));
+        return merged;
+      }
+    }
   } catch { /* empty */ }
 
-  return [
-    { key: 'purpose', label: '目的', type: 'select', options: PURPOSE_OPTIONS, category: '基本' },
-    { key: 'name', label: '昵称', type: 'text', category: '基本' },
-    { key: 'gender', label: '性别', type: 'select', options: GENDER_OPTIONS, category: '基本' },
-    { key: 'age', label: '年龄', type: 'text', category: '基本' },
-    { key: 'height', label: '身高(cm)', type: 'text', category: '基本' },
-    { key: 'weight', label: '体重(kg)', type: 'text', category: '基本' },
-    { key: 'city', label: '城市', type: 'select', options: CITY_OPTIONS, category: '基本' },
-
-    { key: 'skinTone', label: '肤色', type: 'select', options: SKIN_TONE_OPTIONS, category: '外貌' },
-    { key: 'faceType', label: '脸型', type: 'select', options: FACE_TYPE_OPTIONS, category: '外貌' },
-    { key: 'eyeType', label: '眼型', type: 'select', options: EYE_TYPE_OPTIONS, category: '外貌' },
-    { key: 'mouthType', label: '嘴型', type: 'select', options: MOUTH_TYPE_OPTIONS, category: '外貌' },
-    { key: 'bodyType', label: '身材', type: 'select', options: BODY_TYPE_OPTIONS, category: '外貌' },
-
-    { key: 'zodiac', label: '星座', type: 'select', options: ZODIAC_OPTIONS, category: '属性' },
-    { key: 'bloodType', label: '血型', type: 'select', options: BLOOD_TYPE_OPTIONS, category: '属性' },
-    { key: 'marriage', label: '婚姻', type: 'select', options: MARRIAGE_OPTIONS, category: '属性' },
-    { key: 'children', label: '子女', type: 'select', options: CHILDREN_OPTIONS, category: '属性' },
-    { key: 'education', label: '学历', type: 'select', options: EDUCATION_OPTIONS, category: '属性' },
-    { key: 'job', label: '职业', type: 'text', category: '属性' },
-    { key: 'income', label: '年收入', type: 'select', options: INCOME_OPTIONS, category: '属性' },
-    { key: 'house', label: '住房', type: 'select', options: HOUSE_OPTIONS, category: '属性' },
-    { key: 'car', label: '购车', type: 'select', options: CAR_OPTIONS, category: '属性' },
-
-    { key: 'personality', label: '性格', type: 'select', options: PERSONALITY_OPTIONS, category: '个性' },
-    { key: 'smoke', label: '吸烟', type: 'select', options: SMOKE_OPTIONS, category: '个性' },
-    { key: 'drink', label: '饮酒', type: 'select', options: DRINK_OPTIONS, category: '个性' },
-    { key: 'religion', label: '宗教信仰', type: 'select', options: RELIGION_OPTIONS, category: '个性' },
-    { key: 'pet', label: '宠物', type: 'select', options: PET_OPTIONS, category: '个性' },
-
-    { key: 'hobbies', label: '兴趣爱好', type: 'tags', options: HOBBY_OPTIONS, category: '兴趣' },
-    { key: 'food', label: '美食偏好', type: 'tags', options: FOOD_OPTIONS, category: '兴趣' },
-    { key: 'sport', label: '运动爱好', type: 'tags', options: SPORT_OPTIONS, category: '兴趣' },
-    { key: 'music', label: '音乐偏好', type: 'tags', options: MUSIC_OPTIONS, category: '兴趣' },
-    { key: 'interestTags', label: '兴趣标签', type: 'tags', options: [...HOBBY_OPTIONS, ...SPORT_OPTIONS], category: '兴趣' },
-
-    { key: 'expectation', label: '期望', type: 'text', category: '其他' },
-    { key: 'contact', label: '联系方式', type: 'text', category: '其他' },
-  ];
+  return DEFAULT_COLUMNS;
 }
 
 export function addColumn(columns: Column[], col: Column): Column[] {

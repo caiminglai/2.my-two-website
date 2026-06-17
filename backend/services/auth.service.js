@@ -30,12 +30,24 @@ function getCurrentUser(token) {
   return authDb.getAuthUserById(userId);
 }
 
-function changePassword(userId, newPassword) {
-  if (!userId || !newPassword) {
+function changePassword(userId, oldPassword, newPassword) {
+  if (!userId || !oldPassword || !newPassword) {
     return { success: false, message: '参数不完整' };
   }
+  if (newPassword.length < 6) {
+    return { success: false, message: '新密码至少6位' };
+  }
+  const user = authDb.getAuthUserByIdWithPassword(userId);
+  if (!user) {
+    return { success: false, message: '用户不存在' };
+  }
+  const [hash, salt] = user.password.split(':');
+  const { hashPassword } = require('../db/index');
+  if (hashPassword(oldPassword, salt) !== hash) {
+    return { success: false, message: '原密码错误' };
+  }
   authDb.updateAuthUserPassword(userId, newPassword);
-  return { success: true };
+  return { success: true, message: '密码修改成功' };
 }
 
 module.exports = {

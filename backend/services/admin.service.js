@@ -4,7 +4,6 @@
 
 const adminDb = require('../db/admin');
 const userDb = require('../db/users');
-const { backupDatabase, getBackupList, restoreFromBackup } = require('../db/index');
 
 function verifyAdminPassword(inputPassword) {
   const adminPwd = process.env.ADMIN_PASSWORD || adminDb.getAdminPassword();
@@ -60,20 +59,6 @@ function incrementFilterUse(fieldKey) {
   adminDb.incrementCustomFilterUse(fieldKey);
 }
 
-function createBackup() {
-  const path = backupDatabase();
-  return { success: true, path };
-}
-
-function listBackups() {
-  return getBackupList();
-}
-
-function restoreBackup(backupPath) {
-  const result = restoreFromBackup(backupPath);
-  return { success: result };
-}
-
 module.exports = {
   verifyAdminPassword,
   updateAdminPassword,
@@ -85,8 +70,5 @@ module.exports = {
   getAllCustomFilters,
   addCustomFilter,
   deleteCustomFilter,
-  incrementFilterUse,
-  createBackup,
-  listBackups,
-  restoreBackup
+  incrementFilterUse
 };

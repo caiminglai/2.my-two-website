@@ -28,12 +28,12 @@ table{width:100%;border-collapse:collapse}
 th{padding:16px 18px;text-align:left;background:linear-gradient(90deg, #FFF0F5 0%, #FFE4E9 100%);color:#FF69B4;font-size:14px;font-weight:bold;border-bottom:2px solid #FFD6E0}
 td{padding:16px 18px;border-bottom:1px solid #FFE4E9;color:#333;font-size:14px}
 tbody tr:hover{background:#FFF5F8}
-.btn-group{display:flex;gap:8px}
-.edit-btn{padding:6px 14px;background:linear-gradient(135deg, #FFF0F5 0%, #FFE4E9 100%);color:#FF69B4;border:1px solid #FFB6C1;border-radius:10px;cursor:pointer;font-size:12px;transition:all 0.2s}
+.btn-group{display:flex;gap:8px;flex-wrap:nowrap;white-space:nowrap}
+.edit-btn{padding:4px 10px;background:linear-gradient(135deg, #FFF0F5 0%, #FFE4E9 100%);color:#FF69B4;border:1px solid #FFB6C1;border-radius:8px;cursor:pointer;font-size:12px;transition:all 0.2s;white-space:nowrap}
 .edit-btn:hover{background:#FFE4E9;transform:scale(1.05)}
-.del-btn{padding:6px 14px;background:#fff;color:#FF69B4;border:1px solid #FFB6C1;border-radius:10px;cursor:pointer;font-size:12px;transition:all 0.2s}
+.del-btn{padding:4px 10px;background:#fff;color:#FF69B4;border:1px solid #FFB6C1;border-radius:8px;cursor:pointer;font-size:12px;transition:all 0.2s;white-space:nowrap}
 .del-btn:hover{background:#FFF5F8;transform:scale(1.05)}
-.ok-btn{padding:6px 14px;background:linear-gradient(135deg, #6BAF7D 0%, #5A9E6C 100%);color:#fff;border:1px solid #6BAF7D;border-radius:10px;cursor:pointer;font-size:12px;transition:all 0.2s}
+.ok-btn{padding:4px 10px;background:linear-gradient(135deg, #6BAF7D 0%, #5A9E6C 100%);color:#fff;border:1px solid #6BAF7D;border-radius:8px;cursor:pointer;font-size:12px;transition:all 0.2s;white-space:nowrap}
 .ok-btn:hover{transform:scale(1.05)}
 .modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(255,150,180,0.3);display:flex;align-items:center;justify-content:center;z-index:1000;display:none;backdrop-filter:blur(5px)}
 .modal-overlay.show{display:flex}
@@ -72,7 +72,7 @@ tbody tr:hover{background:#FFF5F8}
 .recommend-item .info{color:#999;font-size:12px}
 .age-range{display:flex;align-items:center;gap:8px}
 .age-range input{width:60px}
-.badge{display:inline-block;padding:4px 10px;border-radius:12px;font-size:11px;font-weight:500}
+.badge{display:inline-block;padding:4px 10px;border-radius:12px;font-size:11px;font-weight:500;white-space:nowrap}
 .badge.pending{background:#FFF3E0;color:#E67E22;border:1px solid #FFCC80}
 .badge.processing{background:#E3F2FD;color:#1976D2;border:1px solid #90CAF9}
 .badge.resolved{background:#E8F5E9;color:#4CAF50;border:1px solid #A5D6A7}
@@ -146,7 +146,6 @@ tbody tr:hover{background:#FFF5F8}
   .table-container { overflow-x: auto; }
   table { min-width: 600px; }
   th, td { padding: 10px 12px; font-size: 12px; }
-  .btn-group { flex-direction: column; gap: 4px; }
   .edit-btn, .del-btn, .ok-btn { padding: 4px 10px; font-size: 11px; }
   .modal { width: 95%; max-width: none; padding: 20px; }
   .decor, .decor2 { display: none; }
@@ -268,12 +267,15 @@ tbody tr:hover{background:#FFF5F8}
         </div>
         <button class="filter-btn" onclick="filterData()">🔍 智能筛选</button>
         <button class="reset-btn" onclick="resetFilter()">🔄 重置</button>
+        <button class="filter-btn" onclick="exportCSV()" style="background:linear-gradient(135deg,#42A5F5,#2196F3);margin-left:auto;">📤 批量导出</button>
+        <button class="filter-btn" onclick="showBatchImportModal()" style="background:linear-gradient(135deg,#66BB6A,#4CAF50);">📥 批量导入</button>
+        <button class="filter-btn" onclick="batchDeleteUsers()" style="background:linear-gradient(135deg,#EF5350,#E53935);">🗑️ 批量删除</button>
       </div>
     </div>
 
     <div class="table-container">
       <table>
-        <thead><tr><th>头像 ♡</th><th>昵称 ♡</th><th>性别</th><th>年龄</th><th>城市</th><th>联系方式</th><th>操作 ✧</th></tr></thead>
+        <thead><tr><th style="width:24px;padding:16px 4px;"><input type="checkbox" id="selectAllUsers" onchange="toggleSelectAllUsers(this)"></th><th style="padding-left:4px;">用户 ♡</th><th>性别</th><th>年龄</th><th>城市</th><th>联系方式</th><th>操作 ✧</th></tr></thead>
         <tbody id="tbody"></tbody>
       </table>
     </div>
@@ -308,6 +310,7 @@ tbody tr:hover{background:#FFF5F8}
         </div>
         <button class="filter-btn" onclick="filterDeposits()">🔍 筛选</button>
         <button class="reset-btn" onclick="resetDepositsFilter()">🔄 重置</button>
+        <button class="filter-btn" onclick="batchApproveDeposits()" style="background:linear-gradient(135deg,#66BB6A,#4CAF50);margin-left:auto;">✓ 批量通过</button>
       </div>
     </div>
 
@@ -315,7 +318,8 @@ tbody tr:hover{background:#FFF5F8}
       <table>
         <thead>
           <tr>
-            <th>用户</th>
+            <th style="width:24px;padding:16px 4px;"><input type="checkbox" id="selectAllDeposits" onchange="toggleSelectAllDeposits(this)"></th>
+            <th style="padding-left:4px;">用户</th>
             <th>金额</th>
             <th>支付凭证</th>
             <th>状态</th>
@@ -335,6 +339,7 @@ tbody tr:hover{background:#FFF5F8}
       <div class="stat"><div class="num" id="reportsPending">0</div><div class="label">待处理</div></div>
       <div class="stat"><div class="num" id="reportsResolved">0</div><div class="label">已处理</div></div>
     </div>
+
 
     <div class="filter-bar">
       <div class="filter-row">
@@ -358,12 +363,14 @@ tbody tr:hover{background:#FFF5F8}
         </div>
         <button class="filter-btn" onclick="filterReports()">🔍 筛选</button>
         <button class="reset-btn" onclick="resetReportsFilter()">🔄 重置</button>
+        <button class="filter-btn" onclick="batchResolveReports()" style="background:linear-gradient(135deg,#66BB6A,#4CAF50);margin-left:auto;">✓ 批量解决</button>
+        <button class="filter-btn" onclick="batchRejectReports()" style="background:linear-gradient(135deg,#EF5350,#E53935);">✗ 批量驳回</button>
       </div>
     </div>
 
     <div class="table-container">
       <table>
-        <thead><tr><th>被举报用户</th><th>举报类型</th><th>描述</th><th>凭证图片</th><th>状态</th><th>举报时间</th><th>操作</th></tr></thead>
+        <thead><tr><th style="width:24px;padding:16px 4px;"><input type="checkbox" id="selectAllReports" onchange="toggleSelectAllReports(this)"></th><th style="padding-left:4px;">被举报用户</th><th>举报类型</th><th>描述</th><th>凭证图片</th><th>状态</th><th>举报时间</th><th>操作</th></tr></thead>
         <tbody id="reportsTbody"></tbody>
       </table>
     </div>
@@ -388,15 +395,15 @@ tbody tr:hover{background:#FFF5F8}
           </select>
         </div>
         <button class="filter-btn" onclick="loadUnlockRecords()">🔄 刷新</button>
-        <button class="filter-btn" onclick="batchApproveUnlockRecords()" style="background:linear-gradient(135deg,#66BB6A,#4CAF50);margin-left:auto;">✓ 批量通过审核</button>
+        <button class="filter-btn" onclick="batchApproveUnlockRecords()" style="background:linear-gradient(135deg,#66BB6A,#4CAF50);margin-left:auto;">✓ 批量通过</button>
       </div>
     </div>
 
     <div class="table-container">
       <table>
         <thead><tr>
-          <th style="width:40px;"><input type="checkbox" id="selectAllUnlock" onchange="toggleSelectAllUnlock(this)"></th>
-          <th>查看者</th><th>被查看者</th><th>联系方式</th><th>凭证图片</th><th>状态</th><th>解锁时间</th><th style="width:180px;">操作</th>
+          <th style="width:24px;padding:16px 4px;"><input type="checkbox" id="selectAllUnlock" onchange="toggleSelectAllUnlock(this)"></th>
+          <th style="padding-left:4px;">查看者</th><th>被查看者</th><th>联系方式</th><th>凭证图片</th><th>状态</th><th>解锁时间</th><th>操作</th>
         </tr></thead>
         <tbody id="unlockRecordsTbody"></tbody>
       </table>
@@ -523,8 +530,77 @@ tbody tr:hover{background:#FFF5F8}
   </div>
 </div>
 
+<div class="modal-overlay" id="customPromptModal" onclick="closeCustomPrompt()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <h3 id="customPromptTitle">提示</h3>
+    <p id="customPromptMessage"></p>
+    <input type="text" id="customPromptInput" style="width:100%;padding:10px 14px;border:2px solid #FFB6C1;border-radius:12px;font-size:14px;background:#FFF5F8;color:#333;box-sizing:border-box;margin-bottom:20px;display:none;" placeholder="请输入">
+    <div class="modal-btns">
+      <button class="cancel" onclick="closeCustomPrompt()">取消</button>
+      <button class="confirm" onclick="confirmCustomPrompt()">确定</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="batchImportModal" onclick="closeBatchImportModal()">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:520px;width:92%">
+    <h3>批量导入</h3>
+    <p style="font-size:12px;color:#999;margin-bottom:10px">请下载模板，填入数据后上传 CSV 文件，系统将自动导入并刷新列表。</p>
+    <div style="margin-bottom:14px;">
+      <a href="#" onclick="downloadImportTemplate();return false;" style="color:#FF69B4;text-decoration:underline;font-size:13px;">📥 下载 CSV 模板</a>
+    </div>
+    <input type="file" id="batchImportFile" accept=".csv" style="width:100%;padding:10px 0;font-size:13px;color:#333;">
+    <div class="modal-btns">
+      <button class="cancel" onclick="closeBatchImportModal()">取消</button>
+      <button class="confirm" onclick="batchImportUsers()">导入</button>
+    </div>
+  </div>
+</div>
+
 <script src="app.js"></script>
 <script>
+var customPromptCallback=null;
+var customPromptMode='alert';
+
+function showCustomModal(title,message,mode,defaultValue,callback){
+  customPromptMode=mode||'alert';
+  customPromptCallback=callback;
+  document.getElementById('customPromptTitle').textContent=title||'提示';
+  document.getElementById('customPromptMessage').textContent=message||'';
+  var input=document.getElementById('customPromptInput');
+  if(customPromptMode==='prompt'){
+    input.style.display='block';
+    input.value=(defaultValue===undefined||defaultValue===null?'':defaultValue);
+    setTimeout(function(){input.focus();},50);
+  }else{
+    input.style.display='none';
+    input.value='';
+  }
+  document.getElementById('customPromptModal').classList.add('show');
+}
+function closeCustomPrompt(){
+  document.getElementById('customPromptModal').classList.remove('show');
+  var cb=customPromptCallback;
+  customPromptCallback=null;
+  if(customPromptMode==='prompt'&&cb) cb(null);
+}
+function confirmCustomPrompt(){
+  var input=document.getElementById('customPromptInput');
+  var cb=customPromptCallback;
+  customPromptCallback=null;
+  document.getElementById('customPromptModal').classList.remove('show');
+  if(cb){
+    if(customPromptMode==='prompt') cb(input.value);
+    else cb();
+  }
+}
+function showConfirm(message,callback){
+  showCustomModal('请确认',message,'confirm',null,callback);
+}
+function showPrompt(message,defaultValue,callback){
+  showCustomModal('请输入',message,'prompt',defaultValue,callback);
+}
+
 function escapeHtml(str) {
   if (str === null || str === undefined) return '';
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
@@ -548,6 +624,9 @@ function searchUsers(){
       allUsers=d.data||[];
       filteredUsers=allUsers;
       currentPage=1;
+      selectedUserIds.clear();
+      var selectAllCheckbox=document.getElementById('selectAllUsers');
+      if(selectAllCheckbox) selectAllCheckbox.checked=false;
       document.getElementById('total').textContent=d.total||allUsers.length;
       var male=0,female=0;
       allUsers.forEach(function(row){var g=row.data?row.data.gender:'';if(g==='男')male++;else if(g==='女')female++;});
@@ -568,6 +647,7 @@ var allUsers=[];
 var filteredUsers=[];
 var currentPage=1;
 var pageSize=100;
+var selectedUserIds=new Set();
 function loadData(){
   var xhr=new XMLHttpRequest();
   xhr.open('GET','/api/users',true);
@@ -578,6 +658,9 @@ function loadData(){
       allUsers=d.data||[];
       filteredUsers=allUsers;
       currentPage=1;
+      selectedUserIds.clear();
+      var selectAllCheckbox=document.getElementById('selectAllUsers');
+      if(selectAllCheckbox) selectAllCheckbox.checked=false;
       document.getElementById('total').textContent=d.total||0;
       var male=0,female=0;
       allUsers.forEach(function(row){var g=row.data?row.data.gender:'';if(g==='男')male++;else if(g==='女')female++;});
@@ -612,7 +695,23 @@ function renderTable(users){
         avatarSrc='/jzxr/avatars/'+escapeHtml(avatar);
       }
     }
-    var tdAvatar=document.createElement('td');
+    var tr=document.createElement('tr');
+
+    // 选择框
+    var tdSelect=document.createElement('td');
+    tdSelect.style.cssText='padding:16px 4px;';
+    var checkbox=document.createElement('input');
+    checkbox.type='checkbox';
+    checkbox.checked=selectedUserIds.has(row.id);
+    (function(id){checkbox.onchange=function(){toggleSelectUser(id,this.checked);};})(row.id);
+    tdSelect.appendChild(checkbox);
+    tr.appendChild(tdSelect);
+
+    // 用户：头像+昵称
+    var tdUser=document.createElement('td');
+    tdUser.style.paddingLeft='4px';
+    var userWrap=document.createElement('div');
+    userWrap.style.cssText='display:flex;align-items:center;gap:8px;';
     if(avatar){
       var img=document.createElement('img');
       img.src=avatarSrc;
@@ -624,38 +723,23 @@ function renderTable(users){
       img.style.border='2px solid #FFB6C1';
       img.onerror=function(){
         var div=document.createElement('div');
-        div.style.width='40px';
-        div.style.height='40px';
-        div.style.borderRadius='50%';
-        div.style.background='linear-gradient(135deg, #FFF0F5 0%, #FFE4E9 100%)';
-        div.style.display='flex';
-        div.style.alignItems='center';
-        div.style.justifyContent='center';
-        div.style.color='#FF69B4';
-        div.style.fontWeight='bold';
-        div.style.border='2px solid #FFB6C1';
+        div.style.cssText='width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#FFF0F5,#FFE4E9);display:flex;align-items:center;justify-content:center;color:#FF69B4;font-weight:bold;border:2px solid #FFB6C1;';
         div.textContent=name?name[0]:'-';
         if(this.parentNode) this.parentNode.replaceChild(div, this);
       };
-      tdAvatar.appendChild(img);
+      userWrap.appendChild(img);
     }else{
       var div=document.createElement('div');
-      div.style.width='40px';
-      div.style.height='40px';
-      div.style.borderRadius='50%';
-      div.style.background='linear-gradient(135deg, #FFF0F5 0%, #FFE4E9 100%)';
-      div.style.display='flex';
-      div.style.alignItems='center';
-      div.style.justifyContent='center';
-      div.style.color='#FF69B4';
-      div.style.fontWeight='bold';
-      div.style.border='2px solid #FFB6C1';
+      div.style.cssText='width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#FFF0F5,#FFE4E9);display:flex;align-items:center;justify-content:center;color:#FF69B4;font-weight:bold;border:2px solid #FFB6C1;';
       div.textContent=name?name[0]:'-';
-      tdAvatar.appendChild(div);
+      userWrap.appendChild(div);
     }
-    var tr=document.createElement('tr');
-    var tdName=document.createElement('td');
-    tdName.textContent=name;
+    var nameSpan=document.createElement('span');
+    nameSpan.textContent=name;
+    nameSpan.style.whiteSpace='nowrap';
+    userWrap.appendChild(nameSpan);
+    tdUser.appendChild(userWrap);
+
     var tdGender=document.createElement('td');
     tdGender.textContent=gender;
     var tdAge=document.createElement('td');
@@ -678,8 +762,7 @@ function renderTable(users){
     btnGroup.appendChild(editBtn);
     btnGroup.appendChild(delBtn);
     tdAction.appendChild(btnGroup);
-    tr.appendChild(tdAvatar);
-    tr.appendChild(tdName);
+    tr.appendChild(tdUser);
     tr.appendChild(tdGender);
     tr.appendChild(tdAge);
     tr.appendChild(tdCity);
@@ -713,6 +796,7 @@ function goToPage(page){
   if(page<1||page>totalPages)return;
   currentPage=page;
   renderCurrentPage();
+  updateUsersSelectAllState();
 }
 function filterData(){
   var gender=document.getElementById('filterGender').value;
@@ -740,6 +824,9 @@ function filterData(){
 
   filteredUsers=filtered;
   currentPage=1;
+  selectedUserIds.clear();
+  var selectAllCheckbox=document.getElementById('selectAllUsers');
+  if(selectAllCheckbox) selectAllCheckbox.checked=false;
   renderCurrentPage();
 }
 function resetFilter(){
@@ -750,6 +837,9 @@ function resetFilter(){
   document.getElementById('filterMatch').value='';
   filteredUsers=allUsers;
   currentPage=1;
+  selectedUserIds.clear();
+  var selectAllCheckbox=document.getElementById('selectAllUsers');
+  if(selectAllCheckbox) selectAllCheckbox.checked=false;
   renderCurrentPage();
 }
 function quickFilter(type){
@@ -841,6 +931,205 @@ function confirmDelete(){
   xhr.onreadystatechange=function(){if(xhr.readyState===4&&xhr.status===200){closeModal();loadData();}};
   xhr.send();
 }
+
+// ========== 用户批量选择 ==========
+function toggleSelectUser(id,checked){
+  if(checked) selectedUserIds.add(id);
+  else selectedUserIds.delete(id);
+  updateUsersSelectAllState();
+}
+
+function toggleSelectAllUsers(checkbox){
+  var checked=checkbox.checked;
+  var users=filteredUsers.length>0?filteredUsers:allUsers;
+  if(checked){
+    users.forEach(function(u){ selectedUserIds.add(u.id); });
+  }else{
+    users.forEach(function(u){ selectedUserIds.delete(u.id); });
+  }
+  renderCurrentPage();
+}
+
+function updateUsersSelectAllState(){
+  var selectAllCheckbox=document.getElementById('selectAllUsers');
+  if(!selectAllCheckbox) return;
+  var users=filteredUsers.length>0?filteredUsers:allUsers;
+  if(users.length===0){
+    selectAllCheckbox.checked=false;
+    return;
+  }
+  var allSelected=users.every(function(u){ return selectedUserIds.has(u.id); });
+  selectAllCheckbox.checked=allSelected;
+}
+
+function batchDeleteUsers(){
+  var ids=Array.from(selectedUserIds);
+  if(ids.length===0){ alert('请先选择要删除的用户'); return; }
+  showConfirm('确认批量删除 '+ids.length+' 个用户？删除后不可恢复。',function(){
+    var completed=0;
+    var failed=0;
+    ids.forEach(function(id){
+      var xhr=new XMLHttpRequest();
+      xhr.open('DELETE','/api/users/'+encodeURIComponent(id),true);
+      xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
+      xhr.onreadystatechange=function(){
+        if(xhr.readyState===4){
+          if(xhr.status===200) completed++; else failed++;
+          if(completed+failed===ids.length){
+            selectedUserIds.clear();
+            var allCb=document.getElementById('selectAllUsers');
+            if(allCb) allCb.checked=false;
+            alert('批量删除完成：成功 '+completed+' 条，失败 '+failed+' 条');
+            loadData();
+          }
+        }
+      };
+      xhr.send();
+    });
+  });
+}
+
+// ========== 用户批量导入 ==========
+function showBatchImportModal(){
+  var fileInput=document.getElementById('batchImportFile');
+  if(fileInput) fileInput.value='';
+  document.getElementById('batchImportModal').classList.add('show');
+}
+
+function closeBatchImportModal(){
+  document.getElementById('batchImportModal').classList.remove('show');
+}
+
+function parseCSV(csvText){
+  var text=csvText.replace(/^\uFEFF/,'');
+  var rows=[];
+  var current=[];
+  var field='';
+  var inQuotes=false;
+  var i=0;
+  function flushField(){
+    current.push(field);
+    field='';
+  }
+  function flushRow(){
+    if(current.length>0 || field!==''){
+      flushField();
+      rows.push(current);
+      current=[];
+    }
+  }
+  while(i<text.length){
+    var ch=text[i];
+    var next=text[i+1];
+    if(inQuotes){
+      if(ch==='"'){
+        if(next==='"'){ field+='"'; i+=2; continue; }
+        inQuotes=false;
+      }else{
+        field+=ch;
+      }
+    }else{
+      if(ch==='"'){
+        inQuotes=true;
+      }else if(ch===','){
+        flushField();
+      }else if(ch==='\n'){
+        flushRow();
+      }else if(ch==='\r'){
+        // skip
+      }else{
+        field+=ch;
+      }
+    }
+    i++;
+  }
+  flushRow();
+  if(rows.length===0) return [];
+  var headers=rows[0].map(function(h){return h.trim();});
+  var result=[];
+  for(var r=1;r<rows.length;r++){
+    var obj={};
+    var row=rows[r];
+    for(var c=0;c<headers.length;c++){
+      obj[headers[c]]=row[c]!==undefined?row[c].trim():'';
+    }
+    result.push(obj);
+  }
+  return result;
+}
+
+function csvRowToUser(row){
+  var dataKeys=['name','gender','age','height','city','education','job','income','contact','personality','expectation','hobbies','food','sport','music'];
+  var data={};
+  dataKeys.forEach(function(k){
+    if(row[k]!==undefined && row[k]!=='') data[k]=row[k];
+  });
+  var user={data:data};
+  if(row.id && row.id.trim()!=='') user.id=row.id.trim();
+  else user.id='user_'+Date.now()+'_'+Math.random().toString(36).slice(2,8)+'_import';
+  if(row.deposit && !isNaN(Number(row.deposit))) user.deposit=Number(row.deposit);
+  if(row.createdAt && row.createdAt.trim()!=='') user.createdAt=Number(row.createdAt.trim());
+  return user;
+}
+
+function downloadImportTemplate(){
+  var headers=['id','name','gender','age','height','city','education','job','income','contact','personality','expectation','hobbies','food','sport','music','deposit','createdAt'];
+  var sample=['','示例','女','25','165','北京','本科','产品经理','15000','13800138000','开朗','真诚交友','旅游;电影','火锅','跑步','流行','0',''];
+  var csvContent='\uFEFF'+headers.join(',')+'\n'+sample.join(',')+'\n';
+  var blob=new Blob([csvContent],{type:'text/csv;charset=utf-8;'});
+  var url=URL.createObjectURL(blob);
+  var link=document.createElement('a');
+  link.href=url;
+  link.download='user_import_template.csv';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+function batchImportUsers(){
+  var fileInput=document.getElementById('batchImportFile');
+  var file=fileInput.files[0];
+  if(!file){ alert('请选择 CSV 文件'); return; }
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var text=e.target.result;
+    var rows;
+    try{
+      rows=parseCSV(text);
+    }catch(err){
+      alert('CSV 解析错误：'+err.message);
+      return;
+    }
+    if(rows.length===0){ alert('导入数据为空'); return; }
+    var validUsers=rows.map(csvRowToUser);
+    showConfirm('确认导入 '+validUsers.length+' 条用户数据？',function(){
+      var xhr=new XMLHttpRequest();
+      xhr.open('POST','/api/users/batch',true);
+      xhr.setRequestHeader('Content-Type','application/json');
+      xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
+      xhr.onreadystatechange=function(){
+        if(xhr.readyState===4){
+          closeBatchImportModal();
+          if(xhr.status===200){
+            var d=JSON.parse(xhr.responseText);
+            if(d.success){
+              alert('导入成功：'+validUsers.length+' 条');
+              loadData();
+            }else{
+              alert('导入失败：'+(d.message||'未知错误'));
+            }
+          }else{
+            alert('导入失败：'+(xhr.responseText||'未知错误'));
+          }
+        }
+      };
+      xhr.send(JSON.stringify(validUsers));
+    });
+  };
+  reader.readAsText(file);
+}
+
 var editId=null;
 function editRow(id){
   var user=allUsers.find(function(u){return u.id===id;});
@@ -974,13 +1263,17 @@ function confirmEdit(){
 function exportCSV(){
   var users=filteredUsers.length>0?filteredUsers:allUsers;
   if(users.length===0){alert('没有数据可导出');return;}
-  var headers=['昵称','性别','年龄','身高','城市','学历','职业','收入','联系方式','性格','期望','兴趣爱好','美食','运动','音乐','保证金','创建时间'];
-  var keys=['name','gender','age','height','city','education','job','income','contact','personality','expectation','hobbies','food','sport','music','deposit','createdAt'];
+  var headers=['id','name','gender','age','height','city','education','job','income','contact','personality','expectation','hobbies','food','sport','music','deposit','createdAt'];
+  var keys=['id','name','gender','age','height','city','education','job','income','contact','personality','expectation','hobbies','food','sport','music','deposit','createdAt'];
   var csvContent='\uFEFF'+headers.join(',')+'\n';
   users.forEach(function(row){
     var d=row.data||{};
     var vals=keys.map(function(k){
-      var val=k==='deposit'?row.deposit:k==='createdAt'?row.createdAt:d[k];
+      var val;
+      if(k==='id') val=row.id;
+      else if(k==='deposit') val=row.deposit;
+      else if(k==='createdAt') val=row.createdAt;
+      else val=d[k];
       val=val||'';
       val=String(val).replace(/"/g,'""');
       if(String(val).indexOf(',')>-1||String(val).indexOf('\n')>-1||String(val).indexOf('"')>-1){val='"'+val+'"';}
@@ -1002,10 +1295,12 @@ function exportCSV(){
 // 举报管理相关变量
 var allReports=[];
 var filteredReports=[];
+var selectedReportIds=new Set();
 
 // 保证金管理相关变量
 var allDeposits=[];
 var filteredDeposits=[];
+var selectedDepositIds=new Set();
 
 function loadDeposits(){
   var xhr=new XMLHttpRequest();
@@ -1016,6 +1311,9 @@ function loadDeposits(){
       var d=JSON.parse(xhr.responseText);
       allDeposits=d.data||[];
       filteredDeposits=allDeposits;
+      selectedDepositIds.clear();
+      var selectAllCheckbox=document.getElementById('selectAllDeposits');
+      if(selectAllCheckbox) selectAllCheckbox.checked=false;
       updateDepositsStats();
       renderDepositsTable();
     }
@@ -1093,15 +1391,27 @@ function buildAvatarElement(avatar, name, size){
 
 function renderDepositsTable(){
   var tbody=document.getElementById('depositsTbody');
+  var selectAllCheckbox=document.getElementById('selectAllDeposits');
   tbody.innerHTML='';
   if(filteredDeposits.length===0){
-    tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:#FF85B3;padding:30px">暂无保证金记录</td></tr>';
+    tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:#FF85B3;padding:30px">暂无保证金记录</td></tr>';
+    if(selectAllCheckbox) selectAllCheckbox.checked=false;
     return;
   }
   filteredDeposits.forEach(function(deposit){
     var tr=document.createElement('tr');
-    
+
+    var td0=document.createElement('td');
+    td0.style.cssText='padding:16px 4px;';
+    var checkbox=document.createElement('input');
+    checkbox.type='checkbox';
+    checkbox.checked=selectedDepositIds.has(deposit.id);
+    (function(id){checkbox.onchange=function(){toggleSelectDeposit(id,this.checked);};})(deposit.id);
+    td0.appendChild(checkbox);
+    tr.appendChild(td0);
+
     var td1=document.createElement('td');
+    td1.style.paddingLeft='4px';
     var userAvatar=deposit.user_avatar||(deposit.user_data&&deposit.user_data.avatar)||'';
     var userName=deposit.user_name||(deposit.user_data&&deposit.user_data.name)||'未知用户';
     var userId=deposit.user_id||(deposit.user_data&&deposit.user_data.id)||deposit.user_data_id||'';
@@ -1240,76 +1550,136 @@ function closeViewProofModal(){
 }
 
 function approveDeposit(id){
-  var note=prompt('请输入审核备注（可选）：');
-  if(note===null) return;
-  var xhr=new XMLHttpRequest();
-  xhr.open('PUT','/api/admin/deposits/'+id+'/approve',true);
-  xhr.setRequestHeader('Content-Type','application/json');
-  xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
-  xhr.onreadystatechange=function(){
-    if(xhr.readyState===4){
-      if(xhr.status===200){
-        var d=JSON.parse(xhr.responseText);
-        if(d.success){
-          alert('审核通过');
-          loadDeposits();
+  showPrompt('请输入审核备注（可选）：','',function(note){
+    if(note===null) return;
+    var xhr=new XMLHttpRequest();
+    xhr.open('PUT','/api/admin/deposits/'+id+'/approve',true);
+    xhr.setRequestHeader('Content-Type','application/json');
+    xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
+    xhr.onreadystatechange=function(){
+      if(xhr.readyState===4){
+        if(xhr.status===200){
+          var d=JSON.parse(xhr.responseText);
+          if(d.success){
+            alert('审核通过');
+            loadDeposits();
+          }else{
+            alert(d.message||'操作失败');
+          }
         }else{
-          alert(d.message||'操作失败');
+          alert('操作失败');
         }
-      }else{
-        alert('操作失败');
       }
-    }
-  };
-  xhr.send(JSON.stringify({admin_note:note||'审核通过'}));
+    };
+    xhr.send(JSON.stringify({admin_note:note||'审核通过'}));
+  });
 }
 
 function rejectDeposit(id){
-  var note=prompt('请输入拒绝原因：');
-  if(note===null) return;
-  var xhr=new XMLHttpRequest();
-  xhr.open('PUT','/api/admin/deposits/'+id+'/reject',true);
-  xhr.setRequestHeader('Content-Type','application/json');
-  xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
-  xhr.onreadystatechange=function(){
-    if(xhr.readyState===4){
-      if(xhr.status===200){
-        var d=JSON.parse(xhr.responseText);
-        if(d.success){
-          alert('已拒绝');
-          loadDeposits();
+  showPrompt('请输入拒绝原因：','',function(note){
+    if(note===null) return;
+    var xhr=new XMLHttpRequest();
+    xhr.open('PUT','/api/admin/deposits/'+id+'/reject',true);
+    xhr.setRequestHeader('Content-Type','application/json');
+    xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
+    xhr.onreadystatechange=function(){
+      if(xhr.readyState===4){
+        if(xhr.status===200){
+          var d=JSON.parse(xhr.responseText);
+          if(d.success){
+            alert('已拒绝');
+            loadDeposits();
+          }else{
+            alert(d.message||'操作失败');
+          }
         }else{
-          alert(d.message||'操作失败');
+          alert('操作失败');
         }
-      }else{
-        alert('操作失败');
       }
-    }
-  };
-  xhr.send(JSON.stringify({admin_note:note||'审核未通过'}));
+    };
+    xhr.send(JSON.stringify({admin_note:note||'审核未通过'}));
+  });
 }
 
 function deleteDeposit(id){
-  if(!confirm('确定删除这条保证金记录吗？')) return;
-  var xhr=new XMLHttpRequest();
-  xhr.open('DELETE','/api/admin/deposits/'+id,true);
-  xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
-  xhr.onreadystatechange=function(){
-    if(xhr.readyState===4){
-      if(xhr.status===200){
-        var d=JSON.parse(xhr.responseText);
-        if(d.success){
-          alert('删除成功');
-          loadDeposits();
+  showConfirm('确定删除这条保证金记录吗？',function(){
+    var xhr=new XMLHttpRequest();
+    xhr.open('DELETE','/api/admin/deposits/'+id,true);
+    xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
+    xhr.onreadystatechange=function(){
+      if(xhr.readyState===4){
+        if(xhr.status===200){
+          var d=JSON.parse(xhr.responseText);
+          if(d.success){
+            alert('删除成功');
+            loadDeposits();
+          }else{
+            alert(d.message||'删除失败');
+          }
         }else{
-          alert(d.message||'删除失败');
+          alert('删除失败');
         }
-      }else{
-        alert('删除失败');
       }
-    }
-  };
-  xhr.send();
+    };
+    xhr.send();
+  });
+}
+
+function toggleSelectDeposit(id,checked){
+  if(checked) selectedDepositIds.add(id);
+  else selectedDepositIds.delete(id);
+  updateDepositsSelectAllState();
+}
+
+function toggleSelectAllDeposits(checkbox){
+  var checked=checkbox.checked;
+  if(checked){
+    filteredDeposits.forEach(function(d){ selectedDepositIds.add(d.id); });
+  }else{
+    filteredDeposits.forEach(function(d){ selectedDepositIds.delete(d.id); });
+  }
+  renderDepositsTable();
+}
+
+function updateDepositsSelectAllState(){
+  var selectAllCheckbox=document.getElementById('selectAllDeposits');
+  if(!selectAllCheckbox) return;
+  if(filteredDeposits.length===0){
+    selectAllCheckbox.checked=false;
+    return;
+  }
+  var allSelected=filteredDeposits.every(function(d){ return selectedDepositIds.has(d.id); });
+  selectAllCheckbox.checked=allSelected;
+}
+
+function batchApproveDeposits(){
+  var ids=Array.from(selectedDepositIds);
+  if(ids.length===0){ alert('请先选择保证金记录'); return; }
+  showConfirm('确认批量通过 '+ids.length+' 条保证金记录？',function(){
+    var completed=0;
+    var failed=0;
+    ids.forEach(function(id){
+      var xhr=new XMLHttpRequest();
+      xhr.open('PUT','/api/admin/deposits/'+id+'/approve',true);
+      xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
+      xhr.onreadystatechange=function(){
+        if(xhr.readyState===4){
+          if(xhr.status===200){
+            var d=JSON.parse(xhr.responseText);
+            if(d.success) completed++; else failed++;
+          }else{
+            failed++;
+          }
+          if(completed+failed===ids.length){
+            alert('批量审核完成：成功 '+completed+' 条，失败 '+failed+' 条');
+            selectedDepositIds.clear();
+            loadDeposits();
+          }
+        }
+      };
+      xhr.send();
+    });
+  });
 }
 
 function searchDeposits(){
@@ -1363,6 +1733,9 @@ function loadReports(){
       var d=JSON.parse(xhr.responseText);
       allReports=d||[];
       filteredReports=allReports;
+      selectedReportIds.clear();
+      var selectAllCheckbox=document.getElementById('selectAllReports');
+      if(selectAllCheckbox) selectAllCheckbox.checked=false;
       updateReportsStats();
       renderReportsTable();
     }
@@ -1381,14 +1754,25 @@ function updateReportsStats(){
 
 function renderReportsTable(){
   var tbody=document.getElementById('reportsTbody');
+  var selectAllCheckbox=document.getElementById('selectAllReports');
   tbody.innerHTML='';
   if(filteredReports.length===0){
-    tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:#FF85B3;padding:30px">暂无举报记录</td></tr>';
+    tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:#FF85B3;padding:30px">暂无举报记录</td></tr>';
+    if(selectAllCheckbox) selectAllCheckbox.checked=false;
     return;
   }
   filteredReports.forEach(function(report){
     var tr=document.createElement('tr');
     tr.setAttribute('data-id', report.id);
+
+    var td0=document.createElement('td');
+    td0.style.cssText='padding:16px 4px;';
+    var checkbox=document.createElement('input');
+    checkbox.type='checkbox';
+    checkbox.checked=selectedReportIds.has(report.id);
+    (function(id){checkbox.onchange=function(){toggleSelectReport(id,this.checked);};})(report.id);
+    td0.appendChild(checkbox);
+    tr.appendChild(td0);
 
     var reportedAvatar = report.reportedAvatar || report.reported_avatar || '';
     var reportedName = report.reportedName || report.reported_name || report.reportedUserName || '未知用户';
@@ -1396,6 +1780,7 @@ function renderReportsTable(){
 
     // 被举报用户：头像+昵称
     var td1=document.createElement('td');
+    td1.style.paddingLeft='4px';
     var userWrap=document.createElement('div');
     userWrap.style.cssText='display:flex;align-items:center;gap:8px;';
     var avatarSrc='';
@@ -1425,6 +1810,7 @@ function renderReportsTable(){
     }
     var nameSpan=document.createElement('span');
     nameSpan.textContent=escapeHtml(reportedName);
+    nameSpan.style.whiteSpace='nowrap';
     userWrap.appendChild(nameSpan);
     td1.appendChild(userWrap);
 
@@ -1491,20 +1877,20 @@ function renderReportsTable(){
     var td7=document.createElement('td');
     var btnGroup=document.createElement('div');
     btnGroup.className='btn-group';
-    var viewBtn=document.createElement('button');
-    viewBtn.className='edit-btn';
-    viewBtn.textContent='查看';
-    viewBtn.onclick=function(){viewReport(report.id);};
     var resolveBtn=document.createElement('button');
     resolveBtn.className='ok-btn';
-    resolveBtn.textContent='处理';
-    resolveBtn.onclick=function(){showResolveReport(report.id);};
+    resolveBtn.textContent='解决';
+    resolveBtn.onclick=function(){resolveReport(report.id,'resolved');};
+    var rejectBtn=document.createElement('button');
+    rejectBtn.className='edit-btn';
+    rejectBtn.textContent='驳回';
+    rejectBtn.onclick=function(){resolveReport(report.id,'rejected');};
     var deleteBtn=document.createElement('button');
     deleteBtn.className='del-btn';
     deleteBtn.textContent='删除';
     deleteBtn.onclick=function(){delReport(report.id);};
-    btnGroup.appendChild(viewBtn);
     btnGroup.appendChild(resolveBtn);
+    btnGroup.appendChild(rejectBtn);
     btnGroup.appendChild(deleteBtn);
     td7.appendChild(btnGroup);
 
@@ -1519,47 +1905,99 @@ function renderReportsTable(){
   });
 }
 
-function viewReport(id){
-  var report=allReports.find(r=>r.id===id);
-  if(!report){alert('举报记录不存在');return;}
-  var reportedName = report.reportedName || report.reported_user_name || report.reportedNickName || report.reported_user_id || '未知';
-  alert('举报详情：\n被举报用户：'+reportedName+'\n举报类型：'+(report.reportType||'其他')+'\n举报描述：'+(report.description||'无')+'\n当前状态：'+(report.status||'pending'));
-}
-
-function showResolveReport(id){
-  var report=allReports.find(r=>r.id===id);
-  if(!report){alert('举报记录不存在');return;}
-  var reportedName = report.reportedName || report.reported_user_name || report.reportedNickName || report.reported_user_id || '未知';
-  var action=confirm('请选择操作：\n\n确定 = 标记为已解决\n取消 = 标记为已驳回\n\n当前举报：\n被举报用户：'+reportedName+'\n举报类型：'+(report.reportType||'其他'));
-  var newStatus=action?'resolved':'rejected';
-  resolveReport(id,newStatus);
-}
-
 function resolveReport(id,newStatus){
-  var xhr=new XMLHttpRequest();
-  xhr.open('PUT','/api/reports/'+id+'/status',true);
-  xhr.setRequestHeader('Content-Type','application/json');
-  xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
-  xhr.onreadystatechange=function(){
-    if(xhr.readyState===4&&xhr.status===200){
-      alert('状态更新成功！');
-      loadReports();
-    }
-  };
-  xhr.send(JSON.stringify({status:newStatus}));
+  var label=newStatus==='resolved'?'解决':'驳回';
+  showConfirm('确认'+label+'这条举报记录？',function(){
+    var xhr=new XMLHttpRequest();
+    xhr.open('PUT','/api/reports/'+id+'/status',true);
+    xhr.setRequestHeader('Content-Type','application/json');
+    xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
+    xhr.onreadystatechange=function(){
+      if(xhr.readyState===4&&xhr.status===200){
+        [allReports,filteredReports].forEach(function(list){
+          list.forEach(function(r){ if(r.id===id) r.status=newStatus; });
+        });
+        renderReportsTable();
+      }
+    };
+    xhr.send(JSON.stringify({status:newStatus}));
+  });
 }
 
 function delReport(id){
-  if(!confirm('确定要删除这条举报记录吗？'))return;
-  var xhr=new XMLHttpRequest();
-  xhr.open('DELETE','/api/reports/'+id,true);
-  xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
-  xhr.onreadystatechange=function(){
-    if(xhr.readyState===4&&xhr.status===200){
-      loadReports();
-    }
-  };
-  xhr.send();
+  showConfirm('确定要删除这条举报记录吗？',function(){
+    var xhr=new XMLHttpRequest();
+    xhr.open('DELETE','/api/reports/'+id,true);
+    xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
+    xhr.onreadystatechange=function(){
+      if(xhr.readyState===4&&xhr.status===200){
+        loadReports();
+      }
+    };
+    xhr.send();
+  });
+}
+
+function toggleSelectReport(id,checked){
+  if(checked) selectedReportIds.add(id);
+  else selectedReportIds.delete(id);
+  updateReportsSelectAllState();
+}
+
+function toggleSelectAllReports(checkbox){
+  var checked=checkbox.checked;
+  if(checked){
+    filteredReports.forEach(function(r){ selectedReportIds.add(r.id); });
+  }else{
+    filteredReports.forEach(function(r){ selectedReportIds.delete(r.id); });
+  }
+  renderReportsTable();
+}
+
+function updateReportsSelectAllState(){
+  var selectAllCheckbox=document.getElementById('selectAllReports');
+  if(!selectAllCheckbox) return;
+  if(filteredReports.length===0){
+    selectAllCheckbox.checked=false;
+    return;
+  }
+  var allSelected=filteredReports.every(function(r){ return selectedReportIds.has(r.id); });
+  selectAllCheckbox.checked=allSelected;
+}
+
+function batchUpdateReports(status){
+  var ids=Array.from(selectedReportIds);
+  if(ids.length===0){ alert('请先选择举报记录'); return; }
+  var label=status==='resolved'?'解决':'驳回';
+  showConfirm('确认批量'+label+' '+ids.length+' 条举报记录？',function(){
+  var completed=0;
+  var failed=0;
+  ids.forEach(function(id){
+    var xhr=new XMLHttpRequest();
+    xhr.open('PUT','/api/reports/'+id+'/status',true);
+    xhr.setRequestHeader('Content-Type','application/json');
+    xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
+    xhr.onreadystatechange=function(){
+      if(xhr.readyState===4){
+        if(xhr.status===200) completed++; else failed++;
+        if(completed+failed===ids.length){
+          alert('批量'+label+'完成：成功 '+completed+' 条，失败 '+failed+' 条');
+          selectedReportIds.clear();
+          loadReports();
+        }
+      }
+    };
+    xhr.send(JSON.stringify({status:status}));
+  });
+  });
+}
+
+function batchResolveReports(){
+  batchUpdateReports('resolved');
+}
+
+function batchRejectReports(){
+  batchUpdateReports('rejected');
 }
 
 function searchReports(){
@@ -1720,17 +2158,18 @@ function addCustomField(){
 }
 
 function deleteCustomField(id){
-  if(!confirm('确定要删除该自定义字段吗？')) return;
-  var xhr=new XMLHttpRequest();
-  xhr.open('DELETE','/api/admin/custom-fields/'+encodeURIComponent(id),true);
-  xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
-  xhr.onreadystatechange=function(){
-    if(xhr.readyState===4&&xhr.status===200){
-      loadCustomFields();
-      alert('删除成功');
-    }
-  };
-  xhr.send();
+  showConfirm('确定要删除该自定义字段吗？',function(){
+    var xhr=new XMLHttpRequest();
+    xhr.open('DELETE','/api/admin/custom-fields/'+encodeURIComponent(id),true);
+    xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
+    xhr.onreadystatechange=function(){
+      if(xhr.readyState===4&&xhr.status===200){
+        loadCustomFields();
+        alert('删除成功');
+      }
+    };
+    xhr.send();
+  });
 }
 
 // ============ 解锁记录模块 ============
@@ -1788,7 +2227,7 @@ function renderUnlockRecordsTable(){
 
     // 复选框
     var td0=document.createElement('td');
-    td0.style.cssText='text-align:center;';
+    td0.style.cssText='padding:16px 4px;';
     if((record.status||'pending')==='pending'){
       var checkbox=document.createElement('input');
       checkbox.type='checkbox';
@@ -1805,6 +2244,7 @@ function renderUnlockRecordsTable(){
     var viewerName=record.viewer_name||'用户 '+(displayViewerId.substring(displayViewerId.length-4)||'');
     var viewerAvatar=record.viewer_avatar||'';
     var td1=document.createElement('td');
+    td1.style.paddingLeft='4px';
     var viewerWrap=document.createElement('div');
     viewerWrap.style.cssText='display:flex;align-items:center;gap:8px;';
     var viewerAvatarEl=buildAvatarElement(viewerAvatar, viewerName, 28);
@@ -1948,61 +2388,64 @@ function renderUnlockRecordsTable(){
 
 function deleteUnlockRecord(id){
   if(!id&&id!==0) return;
-  if(!confirm('确认删除此记录？删除后不可恢复。')) return;
-  var xhr=new XMLHttpRequest();
-  xhr.open('DELETE','/api/admin/unlock-contact-requests/'+id,true);
-  xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
-  xhr.onreadystatechange=function(){
-    if(xhr.readyState===4){
-      if(xhr.status===200){
-        alert('已删除');
-        loadUnlockRecords();
-      }else{
-        alert('删除失败');
+  showConfirm('确认删除此记录？删除后不可恢复。',function(){
+    var xhr=new XMLHttpRequest();
+    xhr.open('DELETE','/api/admin/unlock-contact-requests/'+id,true);
+    xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
+    xhr.onreadystatechange=function(){
+      if(xhr.readyState===4){
+        if(xhr.status===200){
+          alert('已删除');
+          loadUnlockRecords();
+        }else{
+          alert('删除失败');
+        }
       }
-    }
-  };
-  xhr.send();
+    };
+    xhr.send();
+  });
 }
 
 function approveUnlockRecord(id){
   if(!id&&id!==0) return;
-  if(!confirm('确认通过此查看联系方式申请？通过后用户将能看到对方完整联系方式。')) return;
-  var xhr=new XMLHttpRequest();
-  xhr.open('PUT','/api/admin/unlock-contact-requests/'+id+'/approve',true);
-  xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
-  xhr.setRequestHeader('Content-Type','application/json');
-  xhr.onreadystatechange=function(){
-    if(xhr.readyState===4){
-      if(xhr.status===200){
-        alert('✓ 已通过审核');
-        loadUnlockRecords();
-      }else{
-        alert('操作失败');
+  showConfirm('确认通过此查看联系方式申请？通过后用户将能看到对方完整联系方式。',function(){
+    var xhr=new XMLHttpRequest();
+    xhr.open('PUT','/api/admin/unlock-contact-requests/'+id+'/approve',true);
+    xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
+    xhr.setRequestHeader('Content-Type','application/json');
+    xhr.onreadystatechange=function(){
+      if(xhr.readyState===4){
+        if(xhr.status===200){
+          alert('✓ 已通过审核');
+          loadUnlockRecords();
+        }else{
+          alert('操作失败');
+        }
       }
-    }
-  };
-  xhr.send(JSON.stringify({admin_note:'管理员审核通过'}));
+    };
+    xhr.send(JSON.stringify({admin_note:'管理员审核通过'}));
+  });
 }
 
 function rejectUnlockRecord(id){
   if(!id&&id!==0) return;
-  if(!confirm('确认拒绝此申请？')) return;
-  var xhr=new XMLHttpRequest();
-  xhr.open('PUT','/api/admin/unlock-contact-requests/'+id+'/reject',true);
-  xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
-  xhr.setRequestHeader('Content-Type','application/json');
-  xhr.onreadystatechange=function(){
-    if(xhr.readyState===4){
-      if(xhr.status===200){
-        alert('已拒绝');
-        loadUnlockRecords();
-      }else{
-        alert('操作失败');
+  showConfirm('确认拒绝此申请？',function(){
+    var xhr=new XMLHttpRequest();
+    xhr.open('PUT','/api/admin/unlock-contact-requests/'+id+'/reject',true);
+    xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
+    xhr.setRequestHeader('Content-Type','application/json');
+    xhr.onreadystatechange=function(){
+      if(xhr.readyState===4){
+        if(xhr.status===200){
+          alert('已拒绝');
+          loadUnlockRecords();
+        }else{
+          alert('操作失败');
+        }
       }
-    }
-  };
-  xhr.send(JSON.stringify({admin_note:'管理员拒绝'}));
+    };
+    xhr.send(JSON.stringify({admin_note:'管理员拒绝'}));
+  });
 }
 
 function toggleSelectAllUnlock(checkbox){
@@ -2028,7 +2471,7 @@ function batchApproveUnlockRecords(){
     if(status==='pending') ids.push(id);
   });
   if(ids.length===0){alert('请先勾选要通过的记录（仅待审核状态可选）');return;}
-  if(!confirm('确认批量通过 '+ids.length+' 条申请？')) return;
+  showConfirm('确认批量通过 '+ids.length+' 条申请？',function(){
   var completed=0,failed=0;
   ids.forEach(function(id){
     var xhr=new XMLHttpRequest();
@@ -2047,7 +2490,8 @@ function batchApproveUnlockRecords(){
         }
       }
     };
-    xhr.send(JSON.stringify({admin_note:'批量审核通过'}));
+    xhr.send(JSON.stringify({admin_note:'批量通过'}));
+  });
   });
 }
 
@@ -2068,7 +2512,7 @@ window.addEventListener('load',function(){
   startDepositAutoRefresh();
 });
 
-function logout(){localStorage.removeItem('admin_token');document.cookie='admin_token=;path=/;max-age=0';window.location.href='/jzxr/admin';}
+function logout(){localStorage.removeItem('admin_token');document.cookie='admin_token=;path=/;max-age=0';window.location.href='/jzxr/admin/';}
 loadData();
 </script>
 </body>

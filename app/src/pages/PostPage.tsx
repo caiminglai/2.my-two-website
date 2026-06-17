@@ -40,7 +40,7 @@ export default function PostPage() {
         }
       }
     } catch (e) {
-      console.error(e);
+      // ignored
     } finally {
       setLoadingDeposit(false);
     }

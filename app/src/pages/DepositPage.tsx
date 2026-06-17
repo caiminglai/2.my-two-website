@@ -51,7 +51,7 @@ export default function DepositPage() {
         }
       }
     } catch (err) {
-      console.error('检查支付状态失败:', err);
+      // ignored
     }
   };
 
@@ -79,7 +79,7 @@ export default function DepositPage() {
         }
       }
     } catch (err) {
-      console.error('加载保证金状态失败:', err);
+      // ignored
     } finally {
       setLoadingStatus(false);
     }
@@ -138,7 +138,6 @@ export default function DepositPage() {
         alert('提交失败，请重试');
       }
     } catch (err) {
-      console.error('提交错误:', err);
       alert('网络错误，请检查网络连接');
     } finally {
       setUploading(false);
@@ -177,7 +176,6 @@ export default function DepositPage() {
         alert(error.message || '创建订单失败');
       }
     } catch (err) {
-      console.error('创建订单错误:', err);
       alert('网络错误，请检查网络连接');
     } finally {
       setCreatingOrder(false);
@@ -612,11 +610,6 @@ export default function DepositPage() {
           </div>
         )}
 
-        <Link to="/post"
-          className="block w-full text-center py-3.5 rounded-xl text-sm font-medium text-white transition-all"
-          style={{ background: 'linear-gradient(135deg, #E87A5D, #D96A4D)', boxShadow: '0 2px 12px rgba(232,122,93,0.2)' }}>
-          同意并发布资料
-        </Link>
       </div>
     </div>
   );

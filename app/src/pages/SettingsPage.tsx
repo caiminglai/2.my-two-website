@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { ArrowLeft, Lock, Eye, EyeOff, Shield, Info, ChevronRight, Bell, Moon, HelpCircle, MessageCircle } from 'lucide-react';
+import { ArrowLeft, Lock, Eye, EyeOff, Shield, Info, ChevronRight, Moon, HelpCircle, MessageCircle } from 'lucide-react';
 import { API_BASE_URL } from '../api/config';
 
 export default function SettingsPage() {
@@ -102,14 +102,6 @@ export default function SettingsPage() {
       title: '偏好设置',
       items: [
         {
-          icon: Bell,
-          label: '消息通知',
-          desc: '管理推送通知',
-          color: '#D4A054',
-          bgColor: 'rgba(212,160,84,0.08)',
-          action: () => {},
-        },
-        {
           icon: Moon,
           label: '深色模式',
           desc: '即将推出',
@@ -128,7 +120,8 @@ export default function SettingsPage() {
           desc: '功能说明与常见问题',
           color: '#C47BAF',
           bgColor: 'rgba(196,123,175,0.08)',
-          action: () => navigate('/deposit'),
+          action: () => {},
+          disabled: true,
         },
         {
           icon: MessageCircle,
@@ -167,13 +160,8 @@ export default function SettingsPage() {
               <div className="rounded-2xl overflow-hidden" style={{ background: '#FFFDF9', border: '1px solid #F0E4D4' }}>
                 {group.items.map((item, idx) => {
                   const Icon = item.icon;
-                  return (
-                    <button
-                      key={item.label}
-                      onClick={item.action}
-                      className="w-full flex items-center gap-3 p-4 text-left transition-colors hover:bg-orange-50/30"
-                      style={idx < group.items.length - 1 ? { borderBottom: '1px solid #F0E4D4' } : {}}
-                    >
+                  const content = (
+                    <>
                       <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
                         style={{ background: item.bgColor }}>
                         <Icon size={14} style={{ color: item.color }} />
@@ -182,7 +170,28 @@ export default function SettingsPage() {
                         <div className="text-sm" style={{ color: '#3D2E20' }}>{item.label}</div>
                         <div className="text-xs mt-0.5" style={{ color: '#B5A698' }}>{item.desc}</div>
                       </div>
-                      <ChevronRight size={14} style={{ color: '#D4C8B8' }} />
+                      {!item.disabled && <ChevronRight size={14} style={{ color: '#D4C8B8' }} />}
+                    </>
+                  );
+                  if (item.disabled) {
+                    return (
+                      <div
+                        key={item.label}
+                        className="w-full flex items-center gap-3 p-4 text-left"
+                        style={idx < group.items.length - 1 ? { borderBottom: '1px solid #F0E4D4' } : {}}
+                      >
+                        {content}
+                      </div>
+                    );
+                  }
+                  return (
+                    <button
+                      key={item.label}
+                      onClick={item.action}
+                      className="w-full flex items-center gap-3 p-4 text-left transition-colors hover:bg-orange-50/30"
+                      style={idx < group.items.length - 1 ? { borderBottom: '1px solid #F0E4D4' } : {}}
+                    >
+                      {content}
                     </button>
                   );
                 })}

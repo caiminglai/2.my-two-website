@@ -44,7 +44,7 @@ export default function MyPostsPage() {
         }
       }
     } catch (e) {
-      console.error('加载失败', e);
+      // ignored
     } finally {
       setLoading(false);
     }

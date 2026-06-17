@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "backup": "node -e \"require('./database').backupDatabase()\""
+    "backup": "node -e \"require('./db/index').backupDatabase()\""
   },
   "dependencies": {
     "better-sqlite3": "^12.10.0"

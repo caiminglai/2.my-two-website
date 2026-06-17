@@ -30,9 +30,10 @@ function addRating(req, res, readBodyWithLimit) {
   });
 }
 
-// ========== GET /api/ratings/user/:id
+// ========== GET /api/users/:id/ratings
 function getRatings(req, res, pathname) {
-  const id = pathname.split('/')[4] || pathname.split('/')[3];
+  const parts = pathname.split('/').filter(Boolean);
+  const id = parts[parts.indexOf('users') + 1];
   const result = ratingsService.getUserRatings(id);
   sendJson(res, 200, { success: true, ratings: result.ratings, average: result.average });
 }

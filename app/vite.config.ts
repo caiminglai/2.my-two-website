@@ -23,7 +23,8 @@ export default defineConfig(({ mode }) => {
       open: false,
       historyApiFallback: {
         rewrites: [
-          { from: new RegExp(`^${basePath.slice(0, -1)}(?!/).*`), to: basePath },
+          // 仅精确匹配无斜杠 base 路径，自动补斜杠
+          { from: new RegExp(`^${basePath.slice(0, -1)}$`), to: basePath },
         ],
       },
       middleware: {
@@ -31,8 +32,10 @@ export default defineConfig(({ mode }) => {
           (req, res, next) => {
             const rawPath = req.url?.split('?')[0] || '/'
             const noSlashBase = basePath.slice(0, -1)
+            // 访问 /jzxr（含或不含 query）统一 301 到 /jzxr/
             if (rawPath === noSlashBase) {
-              res.writeHead(301, { Location: basePath })
+              const query = req.url?.includes('?') ? '?' + req.url.split('?')[1] : ''
+              res.writeHead(301, { Location: basePath + query })
               res.end()
               return
             }
