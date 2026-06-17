@@ -1,0 +1,2075 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>管理后台 - 数据管理</title>
+<link rel="stylesheet" href="style.css">
+<style>
+body{font-family:Arial,"Microsoft YaHei",sans-serif;background:linear-gradient(180deg, #FFF0F5 0%, #FFE4E9 30%, #FFD6E0 100%);color:#333;padding:25px;min-height:100vh}
+.container{max-width:1000px;margin:0 auto}
+.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:25px;padding:20px 24px;background:#fff;border-radius:20px;box-shadow:0 6px 25px rgba(255,150,180,0.2);border:2px solid #FFB6C1}
+.header h1{font-size:20px;color:#FF69B4;text-shadow:1px 1px 2px rgba(255,105,180,0.3)}
+.logout{padding:8px 18px;background:linear-gradient(135deg, #FF69B4 0%, #FF85B3 100%);color:#fff;border:none;border-radius:12px;cursor:pointer;font-size:13px;box-shadow:0 3px 12px rgba(255,105,180,0.3)}
+.logout:hover{transform:scale(1.03);box-shadow:0 4px 15px rgba(255,105,180,0.4)}
+.tabs{display:flex;gap:10px;margin-bottom:20px}
+.tab{padding:10px 24px;background:#fff;border:2px solid #FFE4E9;border-radius:14px;color:#FF85B3;font-size:14px;font-weight:500;cursor:pointer;transition:all 0.2s}
+.tab:hover{background:#FFF5F8;transform:translateY(-2px)}
+.tab.active{background:linear-gradient(135deg, #FF69B4 0%, #FF85B3 100%);color:#fff;border-color:#FF69B4;box-shadow:0 4px 15px rgba(255,105,180,0.3)}
+.tab-content{display:none}
+.tab-content.active{display:block}
+.stats{display:flex;gap:18px;margin-bottom:25px}
+.stat{background:#fff;padding:20px 26px;border-radius:18px;box-shadow:0 5px 20px rgba(255,150,180,0.15);flex:1;border:2px solid #FFE4E9;transition:all 0.3s}
+.stat:hover{transform:translateY(-4px);box-shadow:0 8px 28px rgba(255,150,180,0.25)}
+.stat .num{font-size:36px;font-weight:bold;color:#FF69B4;margin-bottom:6px;text-shadow:1px 1px 3px rgba(255,105,180,0.3)}
+.stat .label{font-size:14px;color:#FF85B3}
+.table-container{background:#fff;border-radius:20px;box-shadow:0 6px 25px rgba(255,150,180,0.15);border:2px solid #FFE4E9;overflow:hidden}
+table{width:100%;border-collapse:collapse}
+th{padding:16px 18px;text-align:left;background:linear-gradient(90deg, #FFF0F5 0%, #FFE4E9 100%);color:#FF69B4;font-size:14px;font-weight:bold;border-bottom:2px solid #FFD6E0}
+td{padding:16px 18px;border-bottom:1px solid #FFE4E9;color:#333;font-size:14px}
+tbody tr:hover{background:#FFF5F8}
+.btn-group{display:flex;gap:8px}
+.edit-btn{padding:6px 14px;background:linear-gradient(135deg, #FFF0F5 0%, #FFE4E9 100%);color:#FF69B4;border:1px solid #FFB6C1;border-radius:10px;cursor:pointer;font-size:12px;transition:all 0.2s}
+.edit-btn:hover{background:#FFE4E9;transform:scale(1.05)}
+.del-btn{padding:6px 14px;background:#fff;color:#FF69B4;border:1px solid #FFB6C1;border-radius:10px;cursor:pointer;font-size:12px;transition:all 0.2s}
+.del-btn:hover{background:#FFF5F8;transform:scale(1.05)}
+.ok-btn{padding:6px 14px;background:linear-gradient(135deg, #6BAF7D 0%, #5A9E6C 100%);color:#fff;border:1px solid #6BAF7D;border-radius:10px;cursor:pointer;font-size:12px;transition:all 0.2s}
+.ok-btn:hover{transform:scale(1.05)}
+.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(255,150,180,0.3);display:flex;align-items:center;justify-content:center;z-index:1000;display:none;backdrop-filter:blur(5px)}
+.modal-overlay.show{display:flex}
+.modal{background:#fff;border-radius:20px;padding:26px;width:90%;max-width:360px;box-shadow:0 10px 40px rgba(255,105,180,0.3);border:2px solid #FFB6C1}
+.modal h3{font-size:17px;color:#FF69B4;margin-bottom:10px}
+.modal p{font-size:14px;color:#FF85B3;margin-bottom:20px}
+.modal-btns{display:flex;gap:12px}
+.modal-btns button{flex:1;padding:12px;border:none;border-radius:12px;font-size:14px;cursor:pointer;transition:all 0.2s}
+.modal-btns .confirm{background:linear-gradient(135deg, #FF69B4 0%, #FF85B3 100%);color:#fff;box-shadow:0 4px 15px rgba(255,105,180,0.4)}
+.modal-btns .cancel{background:#FFF5F8;color:#FF69B4;border:1px solid #FFB6C1}
+.modal-btns button:hover{transform:scale(1.03)}
+.decor{position:fixed;top:40px;right:60px;width:80px;height:80px;border-radius:50%;background:rgba(255,182,193,0.3);animation:float 4s ease-in-out infinite}
+.decor2{position:fixed;bottom:60px;left:40px;width:60px;height:60px;border-radius:50%;background:rgba(255,133,179,0.4);animation:float 5s ease-in-out infinite reverse}
+@keyframes float{0%,100%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(-15px) rotate(8deg)}}
+.filter-bar{background:#fff;border-radius:18px;box-shadow:0 5px 20px rgba(255,150,180,0.15);border:2px solid #FFE4E9;padding:20px 24px;margin-bottom:20px}
+.filter-row{display:flex;gap:20px;flex-wrap:wrap;align-items:center;margin-bottom:15px}
+.filter-row:last-child{margin-bottom:0}
+.filter-group{display:flex;align-items:center;gap:8px}
+.filter-group label{color:#FF69B4;font-size:14px;font-weight:500}
+.filter-group input,.filter-group select{padding:10px 14px;border:2px solid #FFB6C1;border-radius:12px;font-size:13px;background:#FFF5F8;color:#333}
+.filter-group input:focus,.filter-group select:focus{outline:none;border-color:#FF69B4;background:#fff}
+.filter-btn{padding:10px 20px;background:linear-gradient(135deg, #FF69B4 0%, #FF85B3 100%);color:#fff;border:none;border-radius:12px;cursor:pointer;font-size:13px;box-shadow:0 3px 12px rgba(255,105,180,0.3);transition:all 0.2s}
+.filter-btn:hover{transform:scale(1.03);box-shadow:0 4px 15px rgba(255,105,180,0.4)}
+.reset-btn{padding:10px 20px;background:#FFF5F8;color:#FF69B4;border:1px solid #FFB6C1;border-radius:12px;cursor:pointer;font-size:13px;transition:all 0.2s}
+.reset-btn:hover{background:#FFE4E9}
+.quick-tags{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:15px;padding-bottom:15px;border-bottom:1px dashed #FFE4E9}
+.quick-tag{padding:6px 14px;background:rgba(255,105,180,0.08);border:1px solid rgba(255,182,193,0.4);border-radius:20px;color:#FF69B4;font-size:12px;cursor:pointer;transition:all 0.2s}
+.quick-tag:hover{background:rgba(255,105,180,0.15);transform:scale(1.05)}
+.quick-tag.active{background:linear-gradient(135deg, #FF69B4 0%, #FF85B3 100%);color:#fff;border-color:#FF69B4}
+.recommend-card{background:linear-gradient(135deg, #FFF0F5 0%, #FFE4E9 100%);border-radius:18px;border:2px solid #FFB6C1;padding:20px;margin-bottom:20px}
+.recommend-card h3{color:#FF69B4;font-size:16px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.recommend-list{display:flex;gap:12px;flex-wrap:wrap}
+.recommend-item{background:#fff;border-radius:12px;padding:12px 16px;border:1px solid #FFE4E9;min-width:140px;transition:all 0.2s}
+.recommend-item:hover{transform:translateY(-2px);box-shadow:0 4px 15px rgba(255,150,180,0.15)}
+.recommend-item .name{color:#FF69B4;font-weight:500;margin-bottom:4px}
+.recommend-item .info{color:#999;font-size:12px}
+.age-range{display:flex;align-items:center;gap:8px}
+.age-range input{width:60px}
+.badge{display:inline-block;padding:4px 10px;border-radius:12px;font-size:11px;font-weight:500}
+.badge.pending{background:#FFF3E0;color:#E67E22;border:1px solid #FFCC80}
+.badge.processing{background:#E3F2FD;color:#1976D2;border:1px solid #90CAF9}
+.badge.resolved{background:#E8F5E9;color:#4CAF50;border:1px solid #A5D6A7}
+.badge.rejected{background:#FFEBEE;color:#E53935;border:1px solid #FFCDD2}
+
+/* 分页样式 */
+#pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 20px;
+  padding: 15px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+#pagination button {
+  padding: 10px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+#pagination button:not(:disabled) {
+  background: linear-gradient(135deg, #FF69B4, #FF85B3);
+  color: #fff;
+}
+
+#pagination button:not(:disabled):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255,105,180,0.3);
+}
+
+#pagination button:disabled {
+  background: #f0e4d4;
+  color: #B5A698;
+  cursor: not-allowed;
+}
+
+#pagination span {
+  font-size: 15px;
+  color: #3D2E20;
+  font-weight: 500;
+}
+
+@media screen and (max-width: 768px) {
+  body { padding: 10px; }
+  .container { width: 100%; max-width: 100%; }
+  .header { flex-direction: column; gap: 15px; padding: 15px; }
+  .header h1 { font-size: 16px; }
+  .logout { padding: 8px 16px; font-size: 12px; }
+  .tabs { flex-wrap: wrap; gap: 8px; }
+  .tab { padding: 8px 16px; font-size: 12px; }
+  .stats { flex-wrap: wrap; gap: 12px; }
+  .stat { flex: 1; min-width: calc(50% - 6px); padding: 15px; }
+  .stat .num { font-size: 24px; }
+  .stat .label { font-size: 12px; }
+  .filter-bar { padding: 15px; }
+  .filter-row { flex-direction: column; align-items: stretch; gap: 12px; }
+  .filter-group { flex-direction: column; align-items: stretch; }
+  .filter-group label { margin-bottom: 5px; }
+  .filter-group input, .filter-group select { width: 100%; }
+  .filter-btn, .reset-btn { padding: 10px; font-size: 12px; }
+  .quick-tags { gap: 6px; }
+  .quick-tag { padding: 4px 10px; font-size: 11px; }
+  .table-container { overflow-x: auto; }
+  table { min-width: 600px; }
+  th, td { padding: 10px 12px; font-size: 12px; }
+  .btn-group { flex-direction: column; gap: 4px; }
+  .edit-btn, .del-btn, .ok-btn { padding: 4px 10px; font-size: 11px; }
+  .modal { width: 95%; max-width: none; padding: 20px; }
+  .decor, .decor2 { display: none; }
+}
+
+@media screen and (max-width: 480px) {
+  body { padding: 5px; }
+  .header h1 { font-size: 14px; }
+  .stat { min-width: 100%; }
+  .stat .num { font-size: 20px; }
+  .recommend-card { padding: 15px; }
+  .recommend-list { gap: 8px; }
+  .recommend-item { min-width: calc(50% - 4px); padding: 10px; }
+}
+</style>
+</head>
+<body>
+<div class="decor"></div>
+<div class="decor2"></div>
+<div class="container">
+  <div class="header">
+    <h1>✧ 数据管理 ♡</h1>
+    <button class="logout" onclick="logout()">退出 ⋆</button>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('users', this)">用户管理</div>
+    <div class="tab" onclick="switchTab('deposits', this)">保证金审核</div>
+    <div class="tab" onclick="switchTab('reports', this)">举报管理</div>
+    <div class="tab" onclick="switchTab('unlockRecords', this)">解锁记录</div>
+    <div class="tab" onclick="switchTab('customFields', this)">自定义字段</div>
+  </div>
+
+  <div class="tab-content active" id="users-tab">
+    <div class="stats">
+      <div class="stat"><div class="num" id="total">0</div><div class="label">总人数 ♪</div></div>
+      <div class="stat"><div class="num" id="male">0</div><div class="label">男生 ♂</div></div>
+      <div class="stat"><div class="num" id="female">0</div><div class="label">女生 ♀</div></div>
+    </div>
+
+    <div class="recommend-card">
+      <h3>✨ 智能推荐匹配 ✨</h3>
+      <div class="recommend-list" id="recommendList">
+        <div class="recommend-item">
+          <div class="name">加载中...</div>
+          <div class="info">分析数据中...</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="filter-bar">
+      <div class="quick-tags">
+        <span class="quick-tag" onclick="quickFilter('young')">🎀 青春组 (18-22)</span>
+        <span class="quick-tag" onclick="quickFilter('adult')">💼 成熟组 (23-28)</span>
+        <span class="quick-tag" onclick="quickFilter('senior')">👩‍💼 资深组 (29+)</span>
+        <span class="quick-tag" onclick="quickFilter('beijing')">🏙️ 北京</span>
+        <span class="quick-tag" onclick="quickFilter('shanghai')">🌃 上海</span>
+        <span class="quick-tag" onclick="quickFilter('shenzhen')">🌉 深圳</span>
+        <span class="quick-tag" onclick="quickFilter('match')">💞 高匹配度</span>
+      </div>
+
+      <div class="filter-row">
+        <div class="filter-group">
+          <label>搜索</label>
+          <input type="text" id="userKeyword" placeholder="昵称/姓名/ID" style="min-width:180px">
+        </div>
+        <div class="filter-group">
+          <label style="display:flex;align-items:center;gap:5px;cursor:pointer;">
+            <input type="checkbox" id="userExactMatch" style="width:auto;margin:0;">
+            精确匹配
+          </label>
+        </div>
+        <button class="filter-btn" onclick="searchUsers()">🔍 搜索</button>
+        <button class="reset-btn" onclick="resetUserSearch()">🔄 重置</button>
+      </div>
+
+      <div class="filter-row">
+        <div class="filter-group">
+          <label>性别</label>
+          <select id="filterGender">
+            <option value="">全部</option>
+            <option value="男">男生 ♂</option>
+            <option value="女">女生 ♀</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>城市</label>
+          <select id="filterCity">
+            <option value="">全部城市</option>
+            <option value="北京">北京</option>
+            <option value="上海">上海</option>
+            <option value="深圳">深圳</option>
+            <option value="广州">广州</option>
+            <option value="杭州">杭州</option>
+            <option value="成都">成都</option>
+            <option value="西安">西安</option>
+            <option value="武汉">武汉</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>年龄范围</label>
+          <div class="age-range">
+            <input type="number" id="ageMin" placeholder="最小" min="1" max="100">
+            <span>-</span>
+            <input type="number" id="ageMax" placeholder="最大" min="1" max="100">
+          </div>
+        </div>
+      </div>
+
+      <div class="filter-row">
+        <div class="filter-group">
+          <label>匹配度</label>
+          <select id="filterMatch">
+            <option value="">全部</option>
+            <option value="high">高匹配度</option>
+            <option value="medium">中匹配度</option>
+            <option value="low">低匹配度</option>
+          </select>
+        </div>
+        <button class="filter-btn" onclick="filterData()">🔍 智能筛选</button>
+        <button class="reset-btn" onclick="resetFilter()">🔄 重置</button>
+      </div>
+    </div>
+
+    <div class="table-container">
+      <table>
+        <thead><tr><th>头像 ♡</th><th>昵称 ♡</th><th>性别</th><th>年龄</th><th>城市</th><th>联系方式</th><th>操作 ✧</th></tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <div id="pagination"></div>
+  </div>
+
+  <div class="tab-content" id="deposits-tab">
+    <div class="stats">
+      <div class="stat"><div class="num" id="depositsTotal">0</div><div class="label">总记录数</div></div>
+      <div class="stat"><div class="num" id="depositsPending">0</div><div class="label">待审核</div></div>
+      <div class="stat"><div class="num" id="depositsApproved">0</div><div class="label">已通过</div></div>
+    </div>
+
+    <div class="filter-bar">
+      <div class="filter-row">
+        <div class="filter-group">
+          <label>搜索</label>
+          <input type="text" id="depositKeyword" placeholder="用户昵称/姓名/ID" style="min-width:180px">
+        </div>
+        <button class="filter-btn" onclick="searchDeposits()">🔍 搜索</button>
+        <button class="reset-btn" onclick="resetDepositSearch()">🔄 重置</button>
+      </div>
+      <div class="filter-row">
+        <div class="filter-group">
+          <label>状态</label>
+          <select id="depositStatusFilter">
+            <option value="">全部</option>
+            <option value="pending">待审核</option>
+            <option value="approved">已通过</option>
+            <option value="rejected">已拒绝</option>
+          </select>
+        </div>
+        <button class="filter-btn" onclick="filterDeposits()">🔍 筛选</button>
+        <button class="reset-btn" onclick="resetDepositsFilter()">🔄 重置</button>
+      </div>
+    </div>
+
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>用户</th>
+            <th>金额</th>
+            <th>支付凭证</th>
+            <th>状态</th>
+            <th>提交时间</th>
+            <th>审核备注</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="depositsTbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="tab-content" id="reports-tab">
+    <div class="stats">
+      <div class="stat"><div class="num" id="reportsTotal">0</div><div class="label">举报总数</div></div>
+      <div class="stat"><div class="num" id="reportsPending">0</div><div class="label">待处理</div></div>
+      <div class="stat"><div class="num" id="reportsResolved">0</div><div class="label">已处理</div></div>
+    </div>
+
+    <div class="filter-bar">
+      <div class="filter-row">
+        <div class="filter-group">
+          <label>搜索</label>
+          <input type="text" id="reportKeyword" placeholder="被举报用户昵称/ID" style="min-width:180px">
+        </div>
+        <button class="filter-btn" onclick="searchReports()">🔍 搜索</button>
+        <button class="reset-btn" onclick="resetReportSearch()">🔄 重置</button>
+      </div>
+      <div class="filter-row">
+        <div class="filter-group">
+          <label>状态</label>
+          <select id="reportStatusFilter">
+            <option value="">全部</option>
+            <option value="pending">待处理</option>
+            <option value="processing">处理中</option>
+            <option value="resolved">已解决</option>
+            <option value="rejected">已驳回</option>
+          </select>
+        </div>
+        <button class="filter-btn" onclick="filterReports()">🔍 筛选</button>
+        <button class="reset-btn" onclick="resetReportsFilter()">🔄 重置</button>
+      </div>
+    </div>
+
+    <div class="table-container">
+      <table>
+        <thead><tr><th>被举报用户</th><th>举报类型</th><th>描述</th><th>凭证图片</th><th>状态</th><th>举报时间</th><th>操作</th></tr></thead>
+        <tbody id="reportsTbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="tab-content" id="unlockRecords-tab">
+    <div class="stats">
+      <div class="stat"><div class="num" id="unlockRecordsTotal">0</div><div class="label">解锁总次数</div></div>
+      <div class="stat"><div class="num" id="unlockRecordsPending">0</div><div class="label">待审核</div></div>
+      <div class="stat"><div class="num" id="unlockRecordsApproved">0</div><div class="label">已通过</div></div>
+    </div>
+
+    <div class="filter-bar">
+      <div class="filter-row">
+        <div class="filter-group">
+          <label>状态筛选</label>
+          <select id="unlockRecordsStatusFilter" onchange="renderUnlockRecordsTable()">
+            <option value="">全部</option>
+            <option value="pending">待审核</option>
+            <option value="unlocked">已通过</option>
+            <option value="rejected">已拒绝</option>
+          </select>
+        </div>
+        <button class="filter-btn" onclick="loadUnlockRecords()">🔄 刷新</button>
+        <button class="filter-btn" onclick="batchApproveUnlockRecords()" style="background:linear-gradient(135deg,#66BB6A,#4CAF50);margin-left:auto;">✓ 批量通过审核</button>
+      </div>
+    </div>
+
+    <div class="table-container">
+      <table>
+        <thead><tr>
+          <th style="width:40px;"><input type="checkbox" id="selectAllUnlock" onchange="toggleSelectAllUnlock(this)"></th>
+          <th>查看者</th><th>被查看者</th><th>联系方式</th><th>凭证图片</th><th>状态</th><th>解锁时间</th><th style="width:180px;">操作</th>
+        </tr></thead>
+        <tbody id="unlockRecordsTbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="tab-content" id="customFields-tab">
+    <div class="stats">
+      <div class="stat"><div class="num" id="customFieldsTotal">0</div><div class="label">自定义字段总数</div></div>
+    </div>
+
+    <div class="filter-bar">
+      <div class="filter-row">
+        <div class="filter-group" style="flex:1;">
+          <label>字段名称</label>
+          <input type="text" id="newFieldName" placeholder="例如：兴趣爱好、美食偏好" style="flex:1;">
+        </div>
+        <div class="filter-group" style="flex:1;">
+          <label>字段标识（英文 key）</label>
+          <input type="text" id="newFieldKey" placeholder="例如：hobbies、food" style="flex:1;">
+        </div>
+        <button class="filter-btn" onclick="addCustomField()">➕ 添加字段</button>
+      </div>
+    </div>
+
+    <div class="table-container">
+      <table>
+        <thead><tr><th>ID</th><th>字段名称</th><th>字段 Key</th><th>创建时间</th><th>操作</th></tr></thead>
+        <tbody id="customFieldsTbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="delModal" onclick="closeModal()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <h3>删除确认 ♥</h3>
+    <p>确定要删除这条记录吗？</p>
+    <div class="modal-btns">
+      <button class="cancel" onclick="closeModal()">取消</button>
+      <button class="confirm" onclick="confirmDelete()">删除</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="editModal" onclick="closeEditModal()">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:420px;width:92%">
+    <h3>编辑用户 ✎</h3>
+    <div style="max-height:60vh;overflow-y:auto;margin:12px 0">
+      <div style="text-align:center;margin-bottom:15px">
+        <div id="avatarPreview" style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg, #FFF0F5 0%, #FFE4E9 100%);margin:0 auto 8px;display:flex;align-items:center;justify-content:center;border:2px dashed #FFB6C1;overflow:hidden">
+          <span style="color:#FF69B4;font-size:12px">点击上传</span>
+        </div>
+        <input type="file" id="avatarFile" accept="image/*" style="display:none" onchange="previewAvatar(this)">
+        <button type="button" onclick="document.getElementById('avatarFile').click()" style="padding:6px 14px;background:#FFF5F8;color:#FF69B4;border:1px solid #FFB6C1;border-radius:8px;font-size:12px;cursor:pointer">选择头像</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div>
+          <label style="display:block;color:#FF69B4;font-size:12px;margin-bottom:4px">昵称</label>
+          <input id="editName" style="width:100%;padding:8px 10px;border:1px solid #FFB6C1;border-radius:8px;font-size:13px;background:#FFF5F8;color:#333" placeholder="昵称">
+        </div>
+        <div>
+          <label style="display:block;color:#FF69B4;font-size:12px;margin-bottom:4px">性别</label>
+          <select id="editGender" style="width:100%;padding:8px 10px;border:1px solid #FFB6C1;border-radius:8px;font-size:13px;background:#FFF5F8;color:#333">
+            <option value="">未设置</option>
+            <option value="男">男</option>
+            <option value="女">女</option>
+          </select>
+        </div>
+        <div>
+          <label style="display:block;color:#FF69B4;font-size:12px;margin-bottom:4px">年龄</label>
+          <input id="editAge" type="number" style="width:100%;padding:8px 10px;border:1px solid #FFB6C1;border-radius:8px;font-size:13px;background:#FFF5F8;color:#333" placeholder="年龄">
+        </div>
+        <div>
+          <label style="display:block;color:#FF69B4;font-size:12px;margin-bottom:4px">城市</label>
+          <input id="editCity" style="width:100%;padding:8px 10px;border:1px solid #FFB6C1;border-radius:8px;font-size:13px;background:#FFF5F8;color:#333" placeholder="城市">
+        </div>
+        <div>
+          <label style="display:block;color:#FF69B4;font-size:12px;margin-bottom:4px">身高</label>
+          <input id="editHeight" style="width:100%;padding:8px 10px;border:1px solid #FFB6C1;border-radius:8px;font-size:13px;background:#FFF5F8;color:#333" placeholder="身高">
+        </div>
+        <div>
+          <label style="display:block;color:#FF69B4;font-size:12px;margin-bottom:4px">学历</label>
+          <input id="editEducation" style="width:100%;padding:8px 10px;border:1px solid #FFB6C1;border-radius:8px;font-size:13px;background:#FFF5F8;color:#333" placeholder="学历">
+        </div>
+        <div>
+          <label style="display:block;color:#FF69B4;font-size:12px;margin-bottom:4px">职业</label>
+          <input id="editJob" style="width:100%;padding:8px 10px;border:1px solid #FFB6C1;border-radius:8px;font-size:13px;background:#FFF5F8;color:#333" placeholder="职业">
+        </div>
+        <div>
+          <label style="display:block;color:#FF69B4;font-size:12px;margin-bottom:4px">收入</label>
+          <input id="editIncome" style="width:100%;padding:8px 10px;border:1px solid #FFB6C1;border-radius:8px;font-size:13px;background:#FFF5F8;color:#333" placeholder="收入">
+        </div>
+      </div>
+      <div style="margin-top:10px">
+        <label style="display:block;color:#FF69B4;font-size:12px;margin-bottom:4px">联系方式</label>
+        <input id="editContact" style="width:100%;padding:8px 10px;border:1px solid #FFB6C1;border-radius:8px;font-size:13px;background:#FFF5F8;color:#333" placeholder="联系方式">
+      </div>
+      <div style="margin-top:10px">
+        <label style="display:block;color:#FF69B4;font-size:12px;margin-bottom:4px">性格</label>
+        <input id="editPersonality" style="width:100%;padding:8px 10px;border:1px solid #FFB6C1;border-radius:8px;font-size:13px;background:#FFF5F8;color:#333" placeholder="性格">
+      </div>
+      <div style="margin-top:10px">
+        <label style="display:block;color:#FF69B4;font-size:12px;margin-bottom:4px">期望</label>
+        <textarea id="editExpectation" rows="2" style="width:100%;padding:8px 10px;border:1px solid #FFB6C1;border-radius:8px;font-size:13px;background:#FFF5F8;color:#333;resize:vertical" placeholder="期望"></textarea>
+      </div>
+    </div>
+    <div class="modal-btns">
+      <button class="cancel" onclick="closeEditModal()">取消</button>
+      <button class="confirm" onclick="confirmEdit()">保存</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="viewProofModal" onclick="closeViewProofModal()">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:500px;">
+    <h3>查看支付凭证</h3>
+    <div id="proofImageContainer" style="text-align:center; margin:15px 0;">
+      <img id="proofImage" src="" alt="支付凭证" style="max-width:100%; max-height:400px; border-radius:8px; border:2px solid #FFB6C1;">
+    </div>
+    <div class="modal-btns">
+      <button class="cancel" onclick="closeViewProofModal()">关闭</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+function searchUsers(){
+  var keyword=document.getElementById('userKeyword').value.trim();
+  var exact=document.getElementById('userExactMatch').checked;
+  if(!keyword){
+    alert('请输入搜索关键词');
+    return;
+  }
+  var url='/api/users?keyword='+encodeURIComponent(keyword);
+  if(exact) url+='&exact=true';
+  var xhr=new XMLHttpRequest();
+  xhr.open('GET',url,true);
+  xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
+  xhr.onreadystatechange=function(){
+    if(xhr.readyState===4&&xhr.status===200){
+      var d=JSON.parse(xhr.responseText);
+      allUsers=d.data||[];
+      filteredUsers=allUsers;
+      currentPage=1;
+      document.getElementById('total').textContent=d.total||allUsers.length;
+      var male=0,female=0;
+      allUsers.forEach(function(row){var g=row.data?row.data.gender:'';if(g==='男')male++;else if(g==='女')female++;});
+      document.getElementById('male').textContent=male;
+      document.getElementById('female').textContent=female;
+      renderCurrentPage();
+    }
+  };
+  xhr.send();
+}
+function resetUserSearch(){
+  document.getElementById('userKeyword').value='';
+  document.getElementById('userExactMatch').checked=false;
+  loadData();
+}
+var delId=null;
+var allUsers=[];
+var filteredUsers=[];
+var currentPage=1;
+var pageSize=100;
+function loadData(){
+  var xhr=new XMLHttpRequest();
+  xhr.open('GET','/api/users',true);
+  xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
+  xhr.onreadystatechange=function(){
+    if(xhr.readyState===4&&xhr.status===200){
+      var d=JSON.parse(xhr.responseText);
+      allUsers=d.data||[];
+      filteredUsers=allUsers;
+      currentPage=1;
+      document.getElementById('total').textContent=d.total||0;
+      var male=0,female=0;
+      allUsers.forEach(function(row){var g=row.data?row.data.gender:'';if(g==='男')male++;else if(g==='女')female++;});
+      document.getElementById('male').textContent=male;
+      document.getElementById('female').textContent=female;
+      renderCurrentPage();
+      generateRecommendations();
+    }
+  };
+  xhr.send();
+}
+function renderTable(users){
+  var tbody=document.getElementById('tbody');
+  tbody.innerHTML='';
+  if(users.length===0){tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:#FF85B3;padding:30px">暂无匹配数据~</td></tr>';return;}
+  users.forEach(function(row){
+    var name=row.data&&row.data.name?row.data.name:'-';
+    var gender=row.data&&row.data.gender?row.data.gender:'-';
+    var age=row.data&&row.data.age?row.data.age:'-';
+    var city=row.data&&row.data.city?row.data.city:'-';
+    var contact=row.data&&row.data.contact?row.data.contact:'-';
+    var avatar=row.data&&row.data.avatar?row.data.avatar:'';
+    var avatarSrc='';
+    if(avatar){
+      if(avatar.startsWith('http')){
+        avatarSrc=avatar;
+      }else if(avatar.startsWith('/avatars/')){
+        avatarSrc='/jzxr'+avatar;
+      }else if(avatar.startsWith('/uploads/')){
+        avatarSrc='/jzxr'+avatar;
+      }else{
+        avatarSrc='/jzxr/avatars/'+escapeHtml(avatar);
+      }
+    }
+    var tdAvatar=document.createElement('td');
+    if(avatar){
+      var img=document.createElement('img');
+      img.src=avatarSrc;
+      img.alt=escapeHtml(name);
+      img.style.width='40px';
+      img.style.height='40px';
+      img.style.borderRadius='50%';
+      img.style.objectFit='cover';
+      img.style.border='2px solid #FFB6C1';
+      img.onerror=function(){
+        var div=document.createElement('div');
+        div.style.width='40px';
+        div.style.height='40px';
+        div.style.borderRadius='50%';
+        div.style.background='linear-gradient(135deg, #FFF0F5 0%, #FFE4E9 100%)';
+        div.style.display='flex';
+        div.style.alignItems='center';
+        div.style.justifyContent='center';
+        div.style.color='#FF69B4';
+        div.style.fontWeight='bold';
+        div.style.border='2px solid #FFB6C1';
+        div.textContent=name?name[0]:'-';
+        if(this.parentNode) this.parentNode.replaceChild(div, this);
+      };
+      tdAvatar.appendChild(img);
+    }else{
+      var div=document.createElement('div');
+      div.style.width='40px';
+      div.style.height='40px';
+      div.style.borderRadius='50%';
+      div.style.background='linear-gradient(135deg, #FFF0F5 0%, #FFE4E9 100%)';
+      div.style.display='flex';
+      div.style.alignItems='center';
+      div.style.justifyContent='center';
+      div.style.color='#FF69B4';
+      div.style.fontWeight='bold';
+      div.style.border='2px solid #FFB6C1';
+      div.textContent=name?name[0]:'-';
+      tdAvatar.appendChild(div);
+    }
+    var tr=document.createElement('tr');
+    var tdName=document.createElement('td');
+    tdName.textContent=name;
+    var tdGender=document.createElement('td');
+    tdGender.textContent=gender;
+    var tdAge=document.createElement('td');
+    tdAge.textContent=age;
+    var tdCity=document.createElement('td');
+    tdCity.textContent=city;
+    var tdContact=document.createElement('td');
+    tdContact.textContent=contact;
+    var tdAction=document.createElement('td');
+    var btnGroup=document.createElement('div');
+    btnGroup.className='btn-group';
+    var editBtn=document.createElement('button');
+    editBtn.className='edit-btn';
+    editBtn.textContent='编辑';
+    editBtn.onclick=function(){editRow(row.id);};
+    var delBtn=document.createElement('button');
+    delBtn.className='del-btn';
+    delBtn.textContent='删除';
+    delBtn.onclick=function(){delRow(row.id);};
+    btnGroup.appendChild(editBtn);
+    btnGroup.appendChild(delBtn);
+    tdAction.appendChild(btnGroup);
+    tr.appendChild(tdAvatar);
+    tr.appendChild(tdName);
+    tr.appendChild(tdGender);
+    tr.appendChild(tdAge);
+    tr.appendChild(tdCity);
+    tr.appendChild(tdContact);
+    tr.appendChild(tdAction);
+    tbody.appendChild(tr);
+  });
+}
+function renderCurrentPage(){
+  var totalPages=Math.ceil(filteredUsers.length/pageSize);
+  var startIndex=(currentPage-1)*pageSize;
+  var paginatedUsers=filteredUsers.slice(startIndex,startIndex+pageSize);
+  renderTable(paginatedUsers);
+  renderPagination(totalPages);
+}
+function renderPagination(totalPages){
+  var paginationDiv=document.getElementById('pagination');
+  if(!paginationDiv)return;
+  if(totalPages<=1){
+    // 即使只有一页，也显示统计信息
+    paginationDiv.innerHTML='<span>共 '+filteredUsers.length+' 人，每页显示 '+pageSize+' 人</span>';
+    return;
+  }
+  var html='<button onclick="goToPage('+(currentPage-1)+')" '+(currentPage===1?'disabled':'')+'>上一页</button>';
+  html+='<span>第 '+currentPage+' / '+totalPages+' 页</span>';
+  html+='<button onclick="goToPage('+(currentPage+1)+')" '+(currentPage===totalPages?'disabled':'')+'>下一页</button>';
+  paginationDiv.innerHTML=html;
+}
+function goToPage(page){
+  var totalPages=Math.ceil(filteredUsers.length/pageSize);
+  if(page<1||page>totalPages)return;
+  currentPage=page;
+  renderCurrentPage();
+}
+function filterData(){
+  var gender=document.getElementById('filterGender').value;
+  var city=document.getElementById('filterCity').value;
+  var ageMin=parseInt(document.getElementById('ageMin').value)||0;
+  var ageMax=parseInt(document.getElementById('ageMax').value)||100;
+  var matchLevel=document.getElementById('filterMatch').value;
+
+  var filtered=allUsers.filter(function(row){
+    var rowGender=row.data&&row.data.gender?row.data.gender:'';
+    var rowCity=row.data&&row.data.city?row.data.city:'';
+    var rowAge=parseInt(row.data&&row.data.age?row.data.age:0);
+    var rowMatch=row.data&&row.data.matchScore?row.data.matchScore:50;
+
+    var matchGender=!gender||rowGender===gender;
+    var matchCity=!city||rowCity===city;
+    var matchAge=rowAge>=ageMin&&rowAge<=ageMax;
+    var matchMatch=true;
+    if(matchLevel==='high')matchMatch=rowMatch>=80;
+    else if(matchLevel==='medium')matchMatch=rowMatch>=50&&rowMatch<80;
+    else if(matchLevel==='low')matchMatch=rowMatch<50;
+
+    return matchGender&&matchCity&&matchAge&&matchMatch;
+  });
+
+  filteredUsers=filtered;
+  currentPage=1;
+  renderCurrentPage();
+}
+function resetFilter(){
+  document.getElementById('filterGender').value='';
+  document.getElementById('filterCity').value='';
+  document.getElementById('ageMin').value='';
+  document.getElementById('ageMax').value='';
+  document.getElementById('filterMatch').value='';
+  filteredUsers=allUsers;
+  currentPage=1;
+  renderCurrentPage();
+}
+function quickFilter(type){
+  resetFilter();
+  switch(type){
+    case 'young':
+      document.getElementById('ageMin').value='18';
+      document.getElementById('ageMax').value='22';
+      break;
+    case 'adult':
+      document.getElementById('ageMin').value='23';
+      document.getElementById('ageMax').value='28';
+      break;
+    case 'senior':
+      document.getElementById('ageMin').value='29';
+      document.getElementById('ageMax').value='50';
+      break;
+    case 'beijing':
+      document.getElementById('filterCity').value='北京';
+      break;
+    case 'shanghai':
+      document.getElementById('filterCity').value='上海';
+      break;
+    case 'shenzhen':
+      document.getElementById('filterCity').value='深圳';
+      break;
+    case 'match':
+      document.getElementById('filterMatch').value='high';
+      break;
+  }
+  filterData();
+}
+function generateRecommendations(){
+  var recommendList=document.getElementById('recommendList');
+
+  if(allUsers.length===0){
+    recommendList.innerHTML='<div class="recommend-item"><div class="name">暂无数据</div><div class="info">请先添加用户数据</div></div>';
+    return;
+  }
+
+  var recommendations=[];
+  var maleUsers=allUsers.filter(function(u){return (u.data&&u.data.gender)==='男';});
+  var femaleUsers=allUsers.filter(function(u){return (u.data&&u.data.gender)==='女';});
+
+  var shuffledMale=maleUsers.sort(function(){return Math.random()-0.5;}).slice(0,3);
+  var shuffledFemale=femaleUsers.sort(function(){return Math.random()-0.5;}).slice(0,3);
+
+  recommendations=shuffledMale.concat(shuffledFemale);
+  recommendations=recommendations.sort(function(){return Math.random()-0.5;}).slice(0,4);
+
+  recommendList.innerHTML='';
+  recommendations.forEach(function(user){
+    var name=user.data&&user.data.name?user.data.name:'匿名';
+    var gender=user.data&&user.data.gender?user.data.gender:'-';
+    var age=user.data&&user.data.age?user.data.age:'-';
+    var city=user.data&&user.data.city?user.data.city:'-';
+    var matchScore=user.data&&user.data.matchScore?user.data.matchScore:Math.floor(Math.random()*30+70);
+    var item=document.createElement('div');
+    item.className='recommend-item';
+    item.onclick=function(){selectRecommend(user.id);};
+    var nameDiv=document.createElement('div');
+    nameDiv.className='name';
+    nameDiv.textContent=name+' '+gender;
+    var infoDiv=document.createElement('div');
+    infoDiv.className='info';
+    infoDiv.textContent=age+'岁 · '+city+' · 匹配度 '+matchScore+'%';
+    item.appendChild(nameDiv);
+    item.appendChild(infoDiv);
+    recommendList.appendChild(item);
+  });
+}
+function selectRecommend(id){
+  var user=allUsers.find(function(u){return u.id===id;});
+  if(user){
+    var gender=user.data&&user.data.gender?user.data.gender:'';
+    var city=user.data&&user.data.city?user.data.city:'';
+    if(gender)document.getElementById('filterGender').value=gender;
+    if(city)document.getElementById('filterCity').value=city;
+    filterData();
+  }
+}
+function delRow(id){delId=id;document.getElementById('delModal').classList.add('show');}
+function closeModal(){document.getElementById('delModal').classList.remove('show');delId=null;}
+function confirmDelete(){
+  if(!delId)return;
+  var xhr=new XMLHttpRequest();
+  xhr.open('DELETE','/api/users/'+encodeURIComponent(delId),true);
+  xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
+  xhr.onreadystatechange=function(){if(xhr.readyState===4&&xhr.status===200){closeModal();loadData();}};
+  xhr.send();
+}
+var editId=null;
+function editRow(id){
+  var user=allUsers.find(function(u){return u.id===id;});
+  if(!user){alert('用户不存在');return;}
+  editId=id;
+  var d=user.data||{};
+  document.getElementById('editName').value=d.name||'';
+  document.getElementById('editGender').value=d.gender||'';
+  document.getElementById('editAge').value=d.age||'';
+  document.getElementById('editCity').value=d.city||'';
+  document.getElementById('editHeight').value=d.height||'';
+  document.getElementById('editEducation').value=d.education||'';
+  document.getElementById('editJob').value=d.job||'';
+  document.getElementById('editIncome').value=d.income||'';
+  document.getElementById('editContact').value=d.contact||'';
+  document.getElementById('editPersonality').value=d.personality||'';
+  document.getElementById('editExpectation').value=d.expectation||'';
+  // 显示头像
+  var avatarPreview=document.getElementById('avatarPreview');
+  avatarPreview.innerHTML='';
+  if(d.avatar){
+    var editAvatarSrc='';
+    if(d.avatar.startsWith('http')){
+      editAvatarSrc=d.avatar;
+    }else if(d.avatar.startsWith('/avatars/')){
+      editAvatarSrc='/jzxr'+d.avatar;
+    }else if(d.avatar.startsWith('/uploads/')){
+      editAvatarSrc='/jzxr'+d.avatar;
+    }else{
+      editAvatarSrc='/jzxr/avatars/'+escapeHtml(d.avatar);
+    }
+    var img=document.createElement('img');
+    img.src=editAvatarSrc;
+    img.style.width='100%';
+    img.style.height='100%';
+    img.style.objectFit='cover';
+    img.onerror=function(){
+      this.parentElement.innerHTML='';
+      var span=document.createElement('span');
+      span.style.color='#FF69B4';
+      span.style.fontSize='12px';
+      span.textContent='点击上传';
+      this.parentElement.appendChild(span);
+    };
+    avatarPreview.appendChild(img);
+  }else{
+    var span=document.createElement('span');
+    span.style.color='#FF69B4';
+    span.style.fontSize='12px';
+    span.textContent='点击上传';
+    avatarPreview.appendChild(span);
+  }
+    document.getElementById('avatarFile').value='';
+  document.getElementById('editModal').classList.add('show');
+}
+function previewAvatar(input){
+  if(input.files&&input.files[0]){
+    var reader=new FileReader();
+    reader.onload=function(e){
+      document.getElementById('avatarPreview').innerHTML='<img src="'+e.target.result+'" style="width:100%;height:100%;object-fit:cover">';
+    };
+    reader.readAsDataURL(input.files[0]);
+  }
+}
+function closeEditModal(){
+  document.getElementById('editModal').classList.remove('show');
+  editId=null;
+}
+function confirmEdit(){
+  if(!editId)return;
+  var user=allUsers.find(function(u){return u.id===editId;});
+  if(!user){closeEditModal();return;}
+  
+  var avatarFile=document.getElementById('avatarFile').files[0];
+  var hasNewAvatar=avatarFile!=null;
+  
+  if(hasNewAvatar){
+    // 有新头像，用 FormData
+    var formData=new FormData();
+    formData.append('name',document.getElementById('editName').value);
+    formData.append('gender',document.getElementById('editGender').value);
+    formData.append('age',document.getElementById('editAge').value);
+    formData.append('city',document.getElementById('editCity').value);
+    formData.append('height',document.getElementById('editHeight').value);
+    formData.append('education',document.getElementById('editEducation').value);
+    formData.append('job',document.getElementById('editJob').value);
+    formData.append('income',document.getElementById('editIncome').value);
+    formData.append('contact',document.getElementById('editContact').value);
+    formData.append('personality',document.getElementById('editPersonality').value);
+    formData.append('expectation',document.getElementById('editExpectation').value);
+    formData.append('avatar',avatarFile);
+    
+    var xhr=new XMLHttpRequest();
+    xhr.open('PUT','/api/users/'+encodeURIComponent(editId),true);
+    xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
+    xhr.onreadystatechange=function(){
+      if(xhr.readyState===4){
+        if(xhr.status===200){closeEditModal();loadData();}
+        else{alert('编辑失败: '+(xhr.responseText||'未知错误'));}
+      }
+    };
+    xhr.send(formData);
+  }else{
+    // 无新头像，用 JSON
+    var updateData=JSON.parse(JSON.stringify(user));
+    if(!updateData.data)updateData.data={};
+    updateData.data.name=document.getElementById('editName').value;
+    updateData.data.gender=document.getElementById('editGender').value;
+    updateData.data.age=document.getElementById('editAge').value;
+    updateData.data.city=document.getElementById('editCity').value;
+    updateData.data.height=document.getElementById('editHeight').value;
+    updateData.data.education=document.getElementById('editEducation').value;
+    updateData.data.job=document.getElementById('editJob').value;
+    updateData.data.income=document.getElementById('editIncome').value;
+    updateData.data.contact=document.getElementById('editContact').value;
+    updateData.data.personality=document.getElementById('editPersonality').value;
+    updateData.data.expectation=document.getElementById('editExpectation').value;
+    var xhr=new XMLHttpRequest();
+    xhr.open('PUT','/api/users/'+encodeURIComponent(editId),true);
+    xhr.setRequestHeader('Content-Type','application/json');
+    xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
+    xhr.onreadystatechange=function(){
+      if(xhr.readyState===4){
+        if(xhr.status===200){closeEditModal();loadData();}
+        else{alert('编辑失败');}
+      }
+    };
+    xhr.send(JSON.stringify(updateData));
+  }
+}
+function exportCSV(){
+  var users=filteredUsers.length>0?filteredUsers:allUsers;
+  if(users.length===0){alert('没有数据可导出');return;}
+  var headers=['昵称','性别','年龄','身高','城市','学历','职业','收入','联系方式','性格','期望','兴趣爱好','美食','运动','音乐','保证金','创建时间'];
+  var keys=['name','gender','age','height','city','education','job','income','contact','personality','expectation','hobbies','food','sport','music','deposit','createdAt'];
+  var csvContent='\uFEFF'+headers.join(',')+'\n';
+  users.forEach(function(row){
+    var d=row.data||{};
+    var vals=keys.map(function(k){
+      var val=k==='deposit'?row.deposit:k==='createdAt'?row.createdAt:d[k];
+      val=val||'';
+      val=String(val).replace(/"/g,'""');
+      if(String(val).indexOf(',')>-1||String(val).indexOf('\n')>-1||String(val).indexOf('"')>-1){val='"'+val+'"';}
+      return val;
+    });
+    csvContent+=vals.join(',')+'\n';
+  });
+  var blob=new Blob([csvContent],{type:'text/csv;charset=utf-8;'});
+  var url=URL.createObjectURL(blob);
+  var link=document.createElement('a');
+  link.href=url;
+  link.download='users_'+new Date().toISOString().slice(0,10)+'.csv';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+// 举报管理相关变量
+var allReports=[];
+var filteredReports=[];
+
+// 保证金管理相关变量
+var allDeposits=[];
+var filteredDeposits=[];
+
+function loadDeposits(){
+  var xhr=new XMLHttpRequest();
+  xhr.open('GET','/api/admin/deposits',true);
+  xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
+  xhr.onreadystatechange=function(){
+    if(xhr.readyState===4&&xhr.status===200){
+      var d=JSON.parse(xhr.responseText);
+      allDeposits=d.data||[];
+      filteredDeposits=allDeposits;
+      updateDepositsStats();
+      renderDepositsTable();
+    }
+  };
+  xhr.send();
+}
+
+function updateDepositsStats(){
+  var total=allDeposits.length;
+  var pending=allDeposits.filter(d=>d.status==='pending').length;
+  var approved=allDeposits.filter(d=>d.status==='approved').length;
+  document.getElementById('depositsTotal').textContent=total;
+  document.getElementById('depositsPending').textContent=pending;
+  document.getElementById('depositsApproved').textContent=approved;
+}
+
+function buildAvatarElement(avatar, name, size){
+  size=size||28;
+  var src='';
+  if(avatar){
+    if(avatar.startsWith('http')) src=avatar;
+    else if(avatar.startsWith('/avatars/')) src='/jzxr'+avatar;
+    else if(avatar.startsWith('/uploads/')) src='/jzxr'+avatar;
+    else src='/jzxr/avatars/'+avatar;
+  }
+  var wrap=document.createElement('span');
+  wrap.style.display='inline-flex';
+  wrap.style.alignItems='center';
+  wrap.style.gap='8px';
+  wrap.style.verticalAlign='middle';
+  if(src){
+    var img=document.createElement('img');
+    img.src=src;
+    img.alt=escapeHtml(name||'');
+    img.style.width=size+'px';
+    img.style.height=size+'px';
+    img.style.borderRadius='50%';
+    img.style.objectFit='cover';
+    img.style.border='2px solid #FFB6C1';
+    img.onerror=function(){
+      var fallback=document.createElement('span');
+      fallback.style.display='inline-block';
+      fallback.style.width=size+'px';
+      fallback.style.height=size+'px';
+      fallback.style.borderRadius='50%';
+      fallback.style.background='linear-gradient(135deg, #FFF0F5 0%, #FFE4E9 100%)';
+      fallback.style.color='#FF69B4';
+      fallback.style.fontWeight='bold';
+      fallback.style.fontSize=(size*0.45)+'px';
+      fallback.style.textAlign='center';
+      fallback.style.lineHeight=size+'px';
+      fallback.style.border='2px solid #FFB6C1';
+      fallback.textContent=name?name.charAt(0):'?';
+      if(this.parentNode) this.parentNode.replaceChild(fallback, this);
+    };
+    wrap.appendChild(img);
+  }else{
+    var fallback=document.createElement('span');
+    fallback.style.display='inline-block';
+    fallback.style.width=size+'px';
+    fallback.style.height=size+'px';
+    fallback.style.borderRadius='50%';
+    fallback.style.background='linear-gradient(135deg, #FFF0F5 0%, #FFE4E9 100%)';
+    fallback.style.color='#FF69B4';
+    fallback.style.fontWeight='bold';
+    fallback.style.fontSize=(size*0.45)+'px';
+    fallback.style.textAlign='center';
+    fallback.style.lineHeight=size+'px';
+    fallback.style.border='2px solid #FFB6C1';
+    fallback.textContent=name?name.charAt(0):'?';
+    wrap.appendChild(fallback);
+  }
+  return wrap;
+}
+
+function renderDepositsTable(){
+  var tbody=document.getElementById('depositsTbody');
+  tbody.innerHTML='';
+  if(filteredDeposits.length===0){
+    tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:#FF85B3;padding:30px">暂无保证金记录</td></tr>';
+    return;
+  }
+  filteredDeposits.forEach(function(deposit){
+    var tr=document.createElement('tr');
+    
+    var td1=document.createElement('td');
+    var userAvatar=deposit.user_avatar||(deposit.user_data&&deposit.user_data.avatar)||'';
+    var userName=deposit.user_name||(deposit.user_data&&deposit.user_data.name)||'未知用户';
+    var userId=deposit.user_id||(deposit.user_data&&deposit.user_data.id)||deposit.user_data_id||'';
+    var userWrap=document.createElement('div');
+    userWrap.style.display='flex';
+    userWrap.style.alignItems='center';
+    userWrap.style.gap='8px';
+    var avatarEl=buildAvatarElement(userAvatar, userName, 28);
+    userWrap.appendChild(avatarEl);
+    var nameSpan=document.createElement('span');
+    nameSpan.innerHTML=escapeHtml(userName);
+    userWrap.appendChild(nameSpan);
+    td1.appendChild(userWrap);
+    
+    var td2=document.createElement('td');
+    td2.innerHTML='<span style="color:#E87A5D; font-weight:bold;">¥'+deposit.amount+'</span>';
+    
+    var td3=document.createElement('td');
+    if(deposit.proof_path){
+      var _raw=String(deposit.proof_path).replace(/^\/+/,'');
+      var _proof='/jzxr/'+_raw;
+      var thumb=document.createElement('img');
+      thumb.src=_proof;
+      thumb.alt='凭证';
+      thumb.style.width='28px';
+      thumb.style.height='28px';
+      thumb.style.borderRadius='6px';
+      thumb.style.objectFit='cover';
+      thumb.style.border='2px solid #FFB6C1';
+      thumb.style.cursor='pointer';
+      (function(src){thumb.onclick=function(){viewProof(src, deposit.id);};})(_proof);
+      thumb.onerror=function(){
+        var btn=document.createElement('button');
+        btn.className='edit-btn';
+        btn.textContent='查看';
+        (function(src){btn.onclick=function(){viewProof(src, deposit.id);};})(_proof);
+        if(this.parentNode) this.parentNode.replaceChild(btn, this);
+      };
+      td3.appendChild(thumb);
+    }else{
+      td3.textContent='-';
+    }
+    
+    var td4=document.createElement('td');
+    var badge=document.createElement('span');
+    badge.className='badge '+deposit.status;
+    var statusText={'pending':'待审核','approved':'已通过','rejected':'已拒绝'};
+    badge.textContent=statusText[deposit.status]||deposit.status;
+    td4.appendChild(badge);
+    
+    var td5=document.createElement('td');
+    var dateStr='-';
+    if(deposit.created_at){
+      try{
+        var d=new Date(deposit.created_at);
+        if(!isNaN(d.getTime())) dateStr=d.toLocaleString('zh-CN');
+      }catch(e){}
+    }
+    td5.textContent=dateStr;
+    
+    var td6=document.createElement('td');
+    td6.textContent=deposit.admin_note||'-';
+    td6.style.maxWidth='150px';
+    td6.style.overflow='hidden';
+    td6.style.textOverflow='ellipsis';
+    td6.style.whiteSpace='nowrap';
+    
+    var td7=document.createElement('td');
+    var btnGroup=document.createElement('div');
+    btnGroup.className='btn-group';
+    if(deposit.status==='pending'){
+      var approveBtn=document.createElement('button');
+      approveBtn.className='ok-btn';
+      approveBtn.textContent='通过';
+      approveBtn.onclick=function(){approveDeposit(deposit.id);};
+      
+      var rejectBtn=document.createElement('button');
+      rejectBtn.className='del-btn';
+      rejectBtn.textContent='拒绝';
+      rejectBtn.onclick=function(){rejectDeposit(deposit.id);};
+      
+      btnGroup.appendChild(approveBtn);
+      btnGroup.appendChild(rejectBtn);
+    }
+    var delBtn=document.createElement('button');
+    delBtn.className='del-btn';
+    delBtn.textContent='删除';
+    delBtn.onclick=function(){deleteDeposit(deposit.id);};
+    btnGroup.appendChild(delBtn);
+    td7.appendChild(btnGroup);
+    
+    tr.appendChild(td1);
+    tr.appendChild(td2);
+    tr.appendChild(td3);
+    tr.appendChild(td4);
+    tr.appendChild(td5);
+    tr.appendChild(td6);
+    tr.appendChild(td7);
+    tbody.appendChild(tr);
+  });
+}
+
+function viewProof(proofPath, depositId){
+  var modal=document.getElementById('viewProofModal');
+  var img=document.getElementById('proofImage');
+  var finalSrc;
+  if(proofPath.startsWith('/jzxr/')){
+    finalSrc=proofPath;
+  }else{
+    var _rp=String(proofPath).replace(/^\/+/,'');
+    finalSrc='/jzxr/'+_rp;
+  }
+  img.onerror=function(){
+    if(depositId){
+      var xhr=new XMLHttpRequest();
+      xhr.open('GET','/api/admin/deposits/proof/'+depositId,true);
+      xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
+      xhr.onreadystatechange=function(){
+        if(xhr.readyState===4&&xhr.status===200){
+          var d=JSON.parse(xhr.responseText);
+          if(d.success&&d.data&&d.data.proof_path){
+            img.onerror=null;
+            img.src='/jzxr/'+String(d.data.proof_path).replace(/^\/+/,'');
+          }
+        }
+      };
+      xhr.send();
+    }
+  };
+  img.src=finalSrc;
+  modal.classList.add('show');
+}
+
+function closeViewProofModal(){
+  document.getElementById('viewProofModal').classList.remove('show');
+}
+
+function approveDeposit(id){
+  var note=prompt('请输入审核备注（可选）：');
+  if(note===null) return;
+  var xhr=new XMLHttpRequest();
+  xhr.open('PUT','/api/admin/deposits/'+id+'/approve',true);
+  xhr.setRequestHeader('Content-Type','application/json');
+  xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
+  xhr.onreadystatechange=function(){
+    if(xhr.readyState===4){
+      if(xhr.status===200){
+        var d=JSON.parse(xhr.responseText);
+        if(d.success){
+          alert('审核通过');
+          loadDeposits();
+        }else{
+          alert(d.message||'操作失败');
+        }
+      }else{
+        alert('操作失败');
+      }
+    }
+  };
+  xhr.send(JSON.stringify({admin_note:note||'审核通过'}));
+}
+
+function rejectDeposit(id){
+  var note=prompt('请输入拒绝原因：');
+  if(note===null) return;
+  var xhr=new XMLHttpRequest();
+  xhr.open('PUT','/api/admin/deposits/'+id+'/reject',true);
+  xhr.setRequestHeader('Content-Type','application/json');
+  xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
+  xhr.onreadystatechange=function(){
+    if(xhr.readyState===4){
+      if(xhr.status===200){
+        var d=JSON.parse(xhr.responseText);
+        if(d.success){
+          alert('已拒绝');
+          loadDeposits();
+        }else{
+          alert(d.message||'操作失败');
+        }
+      }else{
+        alert('操作失败');
+      }
+    }
+  };
+  xhr.send(JSON.stringify({admin_note:note||'审核未通过'}));
+}
+
+function deleteDeposit(id){
+  if(!confirm('确定删除这条保证金记录吗？')) return;
+  var xhr=new XMLHttpRequest();
+  xhr.open('DELETE','/api/admin/deposits/'+id,true);
+  xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
+  xhr.onreadystatechange=function(){
+    if(xhr.readyState===4){
+      if(xhr.status===200){
+        var d=JSON.parse(xhr.responseText);
+        if(d.success){
+          alert('删除成功');
+          loadDeposits();
+        }else{
+          alert(d.message||'删除失败');
+        }
+      }else{
+        alert('删除失败');
+      }
+    }
+  };
+  xhr.send();
+}
+
+function searchDeposits(){
+  var keyword=document.getElementById('depositKeyword').value.trim().toLowerCase();
+  var status=document.getElementById('depositStatusFilter').value;
+  var result=allDeposits.filter(function(d){
+    var nameMatch=!keyword
+      || (d.user_name&&d.user_name.toLowerCase().indexOf(keyword)>-1)
+      || (d.user_data&&d.user_data.name&&d.user_data.name.toLowerCase().indexOf(keyword)>-1)
+      || (String(d.user_id||'').toLowerCase().indexOf(keyword)>-1);
+    var statusMatch=!status||d.status===status;
+    return nameMatch&&statusMatch;
+  });
+  filteredDeposits=result;
+  renderDepositsTable();
+}
+function resetDepositSearch(){
+  document.getElementById('depositKeyword').value='';
+  document.getElementById('depositStatusFilter').value='';
+  filteredDeposits=allDeposits;
+  renderDepositsTable();
+}
+
+function filterDeposits(){
+  var status=document.getElementById('depositStatusFilter').value;
+  var keyword=document.getElementById('depositKeyword').value.trim().toLowerCase();
+  var result=allDeposits.filter(function(d){
+    var nameMatch=!keyword
+      || (d.user_name&&d.user_name.toLowerCase().indexOf(keyword)>-1)
+      || (d.user_data&&d.user_data.name&&d.user_data.name.toLowerCase().indexOf(keyword)>-1)
+      || (String(d.user_id||'').toLowerCase().indexOf(keyword)>-1);
+    var statusMatch=!status||d.status===status;
+    return nameMatch&&statusMatch;
+  });
+  filteredDeposits=result;
+  renderDepositsTable();
+}
+
+function resetDepositsFilter(){
+  document.getElementById('depositStatusFilter').value='';
+  filteredDeposits=allDeposits;
+  renderDepositsTable();
+}
+
+function loadReports(){
+  var xhr=new XMLHttpRequest();
+  xhr.open('GET','/api/reports',true);
+  xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
+  xhr.onreadystatechange=function(){
+    if(xhr.readyState===4&&xhr.status===200){
+      var d=JSON.parse(xhr.responseText);
+      allReports=d||[];
+      filteredReports=allReports;
+      updateReportsStats();
+      renderReportsTable();
+    }
+  };
+  xhr.send();
+}
+
+function updateReportsStats(){
+  var total=allReports.length;
+  var pending=allReports.filter(r=>r.status==='pending').length;
+  var resolved=allReports.filter(r=>r.status==='resolved'||r.status==='rejected').length;
+  document.getElementById('reportsTotal').textContent=total;
+  document.getElementById('reportsPending').textContent=pending;
+  document.getElementById('reportsResolved').textContent=resolved;
+}
+
+function renderReportsTable(){
+  var tbody=document.getElementById('reportsTbody');
+  tbody.innerHTML='';
+  if(filteredReports.length===0){
+    tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:#FF85B3;padding:30px">暂无举报记录</td></tr>';
+    return;
+  }
+  filteredReports.forEach(function(report){
+    var tr=document.createElement('tr');
+    tr.setAttribute('data-id', report.id);
+
+    var reportedAvatar = report.reportedAvatar || report.reported_avatar || '';
+    var reportedName = report.reportedName || report.reported_name || report.reportedUserName || '未知用户';
+    var reportType = report.reportType || report.report_type || '其他';
+
+    // 被举报用户：头像+昵称
+    var td1=document.createElement('td');
+    var userWrap=document.createElement('div');
+    userWrap.style.cssText='display:flex;align-items:center;gap:8px;';
+    var avatarSrc='';
+    if(reportedAvatar){
+      if(reportedAvatar.startsWith('http')) avatarSrc=reportedAvatar;
+      else if(reportedAvatar.startsWith('/avatars/')) avatarSrc='/jzxr'+reportedAvatar;
+      else if(reportedAvatar.startsWith('/uploads/')) avatarSrc='/jzxr'+reportedAvatar;
+      else avatarSrc='/jzxr/avatars/'+escapeHtml(reportedAvatar);
+    }
+    if(avatarSrc){
+      var imgEl=document.createElement('img');
+      imgEl.src=avatarSrc;
+      imgEl.alt=escapeHtml(reportedName);
+      imgEl.style.cssText='width:28px;height:28px;border-radius:50%;object-fit:cover;border:2px solid #FFB6C1;';
+      imgEl.onerror=function(){
+        var div=document.createElement('div');
+        div.style.cssText='width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#FFF0F5,#FFE4E9);display:flex;align-items:center;justify-content:center;color:#FF69B4;font-weight:bold;border:2px solid #FFB6C1;font-size:12px;';
+        div.textContent=reportedName?reportedName[0]:'-';
+        if(this.parentNode) this.parentNode.replaceChild(div,this);
+      };
+      userWrap.appendChild(imgEl);
+    }else{
+      var div=document.createElement('div');
+      div.style.cssText='width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#FFF0F5,#FFE4E9);display:flex;align-items:center;justify-content:center;color:#FF69B4;font-weight:bold;border:2px solid #FFB6C1;font-size:12px;';
+      div.textContent=reportedName?reportedName[0]:'-';
+      userWrap.appendChild(div);
+    }
+    var nameSpan=document.createElement('span');
+    nameSpan.textContent=escapeHtml(reportedName);
+    userWrap.appendChild(nameSpan);
+    td1.appendChild(userWrap);
+
+    // 举报类型
+    var td2=document.createElement('td');
+    td2.textContent=reportType;
+
+    // 描述
+    var td3=document.createElement('td');
+    var desc=report.description||'';
+    td3.textContent=desc.length>30?desc.substring(0,30)+'...':desc||'-';
+    td3.style.cssText='max-width:180px;font-size:12px;color:#555;';
+
+    // 凭证图片
+    var td4=document.createElement('td');
+    var proofPath=report.proof_path||report.proofPath||'';
+    if(proofPath){
+      var _raw2=String(proofPath).replace(/^\/+/,'');
+      var _proof2='/jzxr/'+_raw2;
+      var thumb=document.createElement('img');
+      thumb.src=_proof2;
+      thumb.alt='凭证';
+      thumb.style.cssText='width:28px;height:28px;border-radius:6px;object-fit:cover;border:2px solid #FFB6C1;cursor:pointer;';
+      (function(src){thumb.onclick=function(){viewProof(src);};})(_proof2);
+      thumb.onerror=function(){
+        var btn=document.createElement('button');
+        btn.className='edit-btn';
+        btn.style.cssText='font-size:11px;padding:4px 8px;';
+        btn.textContent='查看';
+        (function(src){btn.onclick=function(){viewProof(src);};})(_proof2);
+        if(this.parentNode) this.parentNode.replaceChild(btn,this);
+      };
+      td4.appendChild(thumb);
+    }else{
+      td4.textContent='无';
+      td4.style.color='#FF85B3';
+    }
+
+    // 状态
+    var td5=document.createElement('td');
+    var badge=document.createElement('span');
+    badge.className='badge '+(report.status||'pending');
+    var statusText={
+      'pending':'待处理',
+      'processing':'处理中',
+      'resolved':'已解决',
+      'rejected':'已驳回'
+    };
+    badge.textContent=statusText[report.status]||report.status||'待处理';
+    td5.appendChild(badge);
+
+    // 举报时间
+    var td6=document.createElement('td');
+    var dateStr = '-';
+    if (report.createdAt || report.created_at) {
+      try {
+        var d = new Date(report.createdAt || report.created_at);
+        if (!isNaN(d.getTime())) dateStr = d.toLocaleString('zh-CN');
+      } catch (e) {}
+    }
+    td6.textContent = dateStr;
+
+    // 操作
+    var td7=document.createElement('td');
+    var btnGroup=document.createElement('div');
+    btnGroup.className='btn-group';
+    var viewBtn=document.createElement('button');
+    viewBtn.className='edit-btn';
+    viewBtn.textContent='查看';
+    viewBtn.onclick=function(){viewReport(report.id);};
+    var resolveBtn=document.createElement('button');
+    resolveBtn.className='ok-btn';
+    resolveBtn.textContent='处理';
+    resolveBtn.onclick=function(){showResolveReport(report.id);};
+    var deleteBtn=document.createElement('button');
+    deleteBtn.className='del-btn';
+    deleteBtn.textContent='删除';
+    deleteBtn.onclick=function(){delReport(report.id);};
+    btnGroup.appendChild(viewBtn);
+    btnGroup.appendChild(resolveBtn);
+    btnGroup.appendChild(deleteBtn);
+    td7.appendChild(btnGroup);
+
+    tr.appendChild(td1);
+    tr.appendChild(td2);
+    tr.appendChild(td3);
+    tr.appendChild(td4);
+    tr.appendChild(td5);
+    tr.appendChild(td6);
+    tr.appendChild(td7);
+    tbody.appendChild(tr);
+  });
+}
+
+function viewReport(id){
+  var report=allReports.find(r=>r.id===id);
+  if(!report){alert('举报记录不存在');return;}
+  var reportedName = report.reportedName || report.reported_user_name || report.reportedNickName || report.reported_user_id || '未知';
+  alert('举报详情：\n被举报用户：'+reportedName+'\n举报类型：'+(report.reportType||'其他')+'\n举报描述：'+(report.description||'无')+'\n当前状态：'+(report.status||'pending'));
+}
+
+function showResolveReport(id){
+  var report=allReports.find(r=>r.id===id);
+  if(!report){alert('举报记录不存在');return;}
+  var reportedName = report.reportedName || report.reported_user_name || report.reportedNickName || report.reported_user_id || '未知';
+  var action=confirm('请选择操作：\n\n确定 = 标记为已解决\n取消 = 标记为已驳回\n\n当前举报：\n被举报用户：'+reportedName+'\n举报类型：'+(report.reportType||'其他'));
+  var newStatus=action?'resolved':'rejected';
+  resolveReport(id,newStatus);
+}
+
+function resolveReport(id,newStatus){
+  var xhr=new XMLHttpRequest();
+  xhr.open('PUT','/api/reports/'+id+'/status',true);
+  xhr.setRequestHeader('Content-Type','application/json');
+  xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
+  xhr.onreadystatechange=function(){
+    if(xhr.readyState===4&&xhr.status===200){
+      alert('状态更新成功！');
+      loadReports();
+    }
+  };
+  xhr.send(JSON.stringify({status:newStatus}));
+}
+
+function delReport(id){
+  if(!confirm('确定要删除这条举报记录吗？'))return;
+  var xhr=new XMLHttpRequest();
+  xhr.open('DELETE','/api/reports/'+id,true);
+  xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
+  xhr.onreadystatechange=function(){
+    if(xhr.readyState===4&&xhr.status===200){
+      loadReports();
+    }
+  };
+  xhr.send();
+}
+
+function searchReports(){
+  var keyword=document.getElementById('reportKeyword').value.trim().toLowerCase();
+  var status=document.getElementById('reportStatusFilter').value;
+  var result=allReports.filter(function(r){
+    var name=String(r.reportedName||r.reported_user_name||r.reportedNickName||r.reported_user_id||'').toLowerCase();
+    var uid=String(r.reported_user_id||r.reportedUserId||'').toLowerCase();
+    var nameMatch=!keyword||name.indexOf(keyword)>-1||uid.indexOf(keyword)>-1;
+    var statusMatch=!status||r.status===status;
+    return nameMatch&&statusMatch;
+  });
+  filteredReports=result;
+  renderReportsTable();
+}
+function resetReportSearch(){
+  document.getElementById('reportKeyword').value='';
+  document.getElementById('reportStatusFilter').value='';
+  filteredReports=allReports;
+  renderReportsTable();
+}
+
+function filterReports(){
+  var status=document.getElementById('reportStatusFilter').value;
+  var keyword=document.getElementById('reportKeyword').value.trim().toLowerCase();
+  var result=allReports.filter(function(r){
+    var name=String(r.reportedName||r.reported_user_name||r.reportedNickName||r.reported_user_id||'').toLowerCase();
+    var uid=String(r.reported_user_id||r.reportedUserId||'').toLowerCase();
+    var nameMatch=!keyword||name.indexOf(keyword)>-1||uid.indexOf(keyword)>-1;
+    var statusMatch=!status||r.status===status;
+    return nameMatch&&statusMatch;
+  });
+  filteredReports=result;
+  renderReportsTable();
+}
+
+function resetReportsFilter(){
+  document.getElementById('reportStatusFilter').value='';
+  filteredReports=allReports;
+  renderReportsTable();
+}
+
+function switchTab(tabName, tabEl){
+  var tabs=document.querySelectorAll('.tab');
+  tabs.forEach(function(tab){tab.classList.remove('active');});
+  if(tabEl) tabEl.classList.add('active');
+  else if(event&&event.target) event.target.classList.add('active');
+  var tabContents=document.querySelectorAll('.tab-content');
+  tabContents.forEach(function(content){content.classList.remove('active');});
+  document.getElementById(tabName+'-tab').classList.add('active');
+  if(tabName==='reports'){loadReports();}
+  if(tabName==='deposits'){loadDeposits();}
+  if(tabName==='customFields'){loadCustomFields();}
+  if(tabName==='unlockRecords'){loadUnlockRecords();}
+}
+
+// ============ 自定义字段模块 ============
+var allCustomFields=[];
+
+function loadCustomFields(){
+  var xhr=new XMLHttpRequest();
+  xhr.open('GET','/api/custom-fields',true);
+  xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
+  xhr.onreadystatechange=function(){
+    if(xhr.readyState===4&&xhr.status===200){
+      try{
+        var data=JSON.parse(xhr.responseText);
+        allCustomFields=data.data||data||[];
+        renderCustomFieldsTable();
+      }catch(e){
+        allCustomFields=[];
+        renderCustomFieldsTable();
+      }
+    }
+  };
+  xhr.send();
+}
+
+function renderCustomFieldsTable(){
+  var tbody=document.getElementById('customFieldsTbody');
+  if(!tbody) return;
+  tbody.innerHTML='';
+  var totalEl=document.getElementById('customFieldsTotal');
+  if(totalEl) totalEl.textContent=allCustomFields.length;
+  if(allCustomFields.length===0){
+    tbody.innerHTML='<tr><td colspan="5" style="text-align:center;color:#FF85B3;padding:30px">暂无自定义字段</td></tr>';
+    return;
+  }
+  allCustomFields.forEach(function(field){
+    var tr=document.createElement('tr');
+    var td1=document.createElement('td');
+    td1.textContent=field.id||'';
+    td1.style.fontSize='12px';
+    td1.style.color='#888';
+    var td2=document.createElement('td');
+    td2.textContent=field.name||field.label||'';
+    td2.style.fontWeight='bold';
+    td2.style.color='#FF69B4';
+    var td3=document.createElement('td');
+    td3.textContent=field.key||field.field_key||field.fieldKey||'';
+    td3.style.fontFamily='monospace';
+    td3.style.fontSize='12px';
+    td3.style.color='#666';
+    var td4=document.createElement('td');
+    var dateStr='-';
+    var createdDate=field.created_at||field.createdAt||'';
+    if(createdDate){
+      try{
+        var d=new Date(createdDate);
+        if(!isNaN(d.getTime())) dateStr=d.toLocaleString('zh-CN');
+      }catch(e){}
+    }
+    td4.textContent=dateStr;
+    td4.style.fontSize='12px';
+    td4.style.color='#888';
+    var td5=document.createElement('td');
+    var btnGroup=document.createElement('div');
+    btnGroup.className='btn-group';
+    var delBtn=document.createElement('button');
+    delBtn.className='del-btn';
+    delBtn.textContent='删除';
+    delBtn.onclick=function(){deleteCustomField(field.id);};
+    btnGroup.appendChild(delBtn);
+    td5.appendChild(btnGroup);
+    tr.appendChild(td1);
+    tr.appendChild(td2);
+    tr.appendChild(td3);
+    tr.appendChild(td4);
+    tr.appendChild(td5);
+    tbody.appendChild(tr);
+  });
+}
+
+function addCustomField(){
+  var name=document.getElementById('newFieldName').value.trim();
+  var key=document.getElementById('newFieldKey').value.trim();
+  if(!name||!key){
+    alert('请填写字段名称和标识');
+    return;
+  }
+  var xhr=new XMLHttpRequest();
+  xhr.open('POST','/api/admin/custom-fields',true);
+  xhr.setRequestHeader('Content-Type','application/json');
+  xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
+  xhr.onreadystatechange=function(){
+    if(xhr.readyState===4){
+      if(xhr.status===200||xhr.status===201){
+        document.getElementById('newFieldName').value='';
+        document.getElementById('newFieldKey').value='';
+        loadCustomFields();
+        alert('添加成功');
+      }else{
+        alert('添加失败: '+(xhr.responseText||''));
+      }
+    }
+  };
+  xhr.send(JSON.stringify({name:name,key:key}));
+}
+
+function deleteCustomField(id){
+  if(!confirm('确定要删除该自定义字段吗？')) return;
+  var xhr=new XMLHttpRequest();
+  xhr.open('DELETE','/api/admin/custom-fields/'+encodeURIComponent(id),true);
+  xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
+  xhr.onreadystatechange=function(){
+    if(xhr.readyState===4&&xhr.status===200){
+      loadCustomFields();
+      alert('删除成功');
+    }
+  };
+  xhr.send();
+}
+
+// ============ 解锁记录模块 ============
+var allUnlockRecords=[];
+var selectedUnlockIds=new Set();
+
+function loadUnlockRecords(){
+  var xhr=new XMLHttpRequest();
+  xhr.open('GET','/api/admin/unlock-contact-requests',true);
+  xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
+  xhr.onreadystatechange=function(){
+    if(xhr.readyState===4&&xhr.status===200){
+      try{
+        var data=JSON.parse(xhr.responseText);
+        allUnlockRecords=data.data||data||[];
+        renderUnlockRecordsTable();
+      }catch(e){
+        allUnlockRecords=[];
+        renderUnlockRecordsTable();
+      }
+    }
+  };
+  xhr.send();
+}
+
+function renderUnlockRecordsTable(){
+  var tbody=document.getElementById('unlockRecordsTbody');
+  if(!tbody) return;
+  tbody.innerHTML='';
+
+  var statusFilter=document.getElementById('unlockRecordsStatusFilter');
+  var filter=statusFilter?statusFilter.value:'';
+
+  var filtered=filter?allUnlockRecords.filter(function(r){return r.status===filter;}):allUnlockRecords;
+
+  var total=allUnlockRecords.length;
+  var pending=allUnlockRecords.filter(function(r){return r.status==='pending';}).length;
+  var approved=allUnlockRecords.filter(function(r){return r.status==='unlocked';}).length;
+
+  var totalEl=document.getElementById('unlockRecordsTotal');
+  if(totalEl) totalEl.textContent=total;
+  var pendingEl=document.getElementById('unlockRecordsPending');
+  if(pendingEl) pendingEl.textContent=pending;
+  var approvedEl=document.getElementById('unlockRecordsApproved');
+  if(approvedEl) approvedEl.textContent=approved;
+
+  if(filtered.length===0){
+    tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:#FF85B3;padding:30px">暂无解锁记录</td></tr>';
+    return;
+  }
+  filtered.forEach(function(record){
+    var tr=document.createElement('tr');
+    tr.setAttribute('data-id',record.id||'');
+    tr.setAttribute('data-status',record.status||'pending');
+
+    // 复选框
+    var td0=document.createElement('td');
+    td0.style.cssText='text-align:center;';
+    if((record.status||'pending')==='pending'){
+      var checkbox=document.createElement('input');
+      checkbox.type='checkbox';
+      checkbox.checked=selectedUnlockIds.has(record.id);
+      (function(id){checkbox.onchange=function(){
+        if(checkbox.checked) selectedUnlockIds.add(id); else selectedUnlockIds.delete(id);
+      };})(record.id);
+      td0.appendChild(checkbox);
+    }
+    tr.appendChild(td0);
+
+    // 查看者（来自 auth_users 表：nickname + avatar）
+    var displayViewerId=record.viewer_id||'';
+    var viewerName=record.viewer_name||'用户 '+(displayViewerId.substring(displayViewerId.length-4)||'');
+    var viewerAvatar=record.viewer_avatar||'';
+    var td1=document.createElement('td');
+    var viewerWrap=document.createElement('div');
+    viewerWrap.style.cssText='display:flex;align-items:center;gap:8px;';
+    var viewerAvatarEl=buildAvatarElement(viewerAvatar, viewerName, 28);
+    viewerWrap.appendChild(viewerAvatarEl);
+    var viewerNameSpan=document.createElement('span');
+    viewerNameSpan.innerHTML='<strong style="color:#333;font-size:13px;">'+escapeHtml(viewerName)+'</strong>';
+    viewerWrap.appendChild(viewerNameSpan);
+    td1.appendChild(viewerWrap);
+
+    // 被查看者（来自 users 表：name，avatar有则显示，无则首字占位）
+    var displayTargetId=record.target_user_id||record.target_id||'';
+    var targetName=record.target_name||'用户 '+(displayTargetId.substring(displayTargetId.length-4)||'');
+    var targetAvatarRaw=record.target_avatar||'';
+    var targetAvatar='';
+    if(targetAvatarRaw){
+      if(targetAvatarRaw.startsWith('http')||targetAvatarRaw.startsWith('/')){
+        targetAvatar=targetAvatarRaw;
+      }else{
+        targetAvatar='/jzxr/avatars/'+targetAvatarRaw;
+      }
+    }
+    var td2=document.createElement('td');
+    var targetWrap=document.createElement('div');
+    targetWrap.style.cssText='display:flex;align-items:center;gap:8px;';
+    var targetAvatarEl=buildAvatarElement(targetAvatar, targetName, 28);
+    targetWrap.appendChild(targetAvatarEl);
+    var targetNameSpan=document.createElement('span');
+    targetNameSpan.innerHTML='<strong style="color:#333;font-size:13px;">'+escapeHtml(targetName)+'</strong>';
+    targetWrap.appendChild(targetNameSpan);
+    td2.appendChild(targetWrap);
+
+    // 联系方式
+    var td3=document.createElement('td');
+    var contact=record.target_contact||'';
+    if(contact){
+      td3.textContent=escapeHtml(contact);
+      td3.style.cssText='font-family:monospace;color:#333;font-size:13px;';
+    }else{
+      td3.textContent='-';
+      td3.style.color='#FF85B3';
+    }
+
+    // 凭证图片（加 /jzxr 前缀走代理访问后端 uploads）
+    var td4=document.createElement('td');
+    if(record.proof_path){
+      var rawPath=String(record.proof_path).replace(/^\/+/,'');
+      var proofSrc='/jzxr/'+rawPath;
+      var proofImg=document.createElement('img');
+      proofImg.src=proofSrc;
+      proofImg.alt='凭证';
+      proofImg.style.cssText='width:48px;height:48px;object-fit:cover;border-radius:8px;cursor:pointer;border:1px solid #FFE0E9;';
+      (function(src){
+        proofImg.onclick=function(){
+          var imgModal=document.createElement('div');
+          imgModal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:9999;';
+          imgModal.onclick=function(){imgModal.remove();};
+          var bigImg=document.createElement('img');
+          bigImg.src=src;
+          bigImg.style.cssText='max-width:90%;max-height:90%;border-radius:12px;';
+          imgModal.appendChild(bigImg);
+          document.body.appendChild(imgModal);
+        };
+      })(proofSrc);
+      proofImg.onerror=function(){
+        td4.innerHTML='';
+        var altBtn=document.createElement('button');
+        altBtn.textContent='查看';
+        altBtn.style.cssText='background:#FFF0F5;color:#FF69B4;border:1px solid #FFB6C1;padding:4px 10px;border-radius:8px;font-size:11px;cursor:pointer;';
+        (function(src){altBtn.onclick=function(){window.open(src,'_blank');};})(proofSrc);
+        td4.appendChild(altBtn);
+      };
+      td4.appendChild(proofImg);
+    }else{
+      td4.textContent='无';
+      td4.style.color='#999';
+    }
+
+    // 状态
+    var td5=document.createElement('td');
+    var statusBadge=document.createElement('span');
+    statusBadge.style.cssText='padding:4px 10px;border-radius:12px;font-size:11px;font-weight:500;';
+    var status=record.status||'pending';
+    if(status==='unlocked'){
+      statusBadge.textContent='✓ 已通过';
+      statusBadge.style.cssText+='background:#E8F5E8;color:#4CAF50;';
+    }else if(status==='rejected'){
+      statusBadge.textContent='✗ 已拒绝';
+      statusBadge.style.cssText+='background:#FFEBEE;color:#F44336;';
+    }else{
+      statusBadge.textContent='⏳ 待审核';
+      statusBadge.style.cssText+='background:#FFF3E0;color:#FF9800;';
+    }
+    td5.appendChild(statusBadge);
+
+    // 解锁时间
+    var td6=document.createElement('td');
+    var dateStr='-';
+    var timeValue=record.unlocked_at||record.created_at||'';
+    if(timeValue){
+      try{
+        var d=new Date(timeValue);
+        if(!isNaN(d.getTime())) dateStr=d.toLocaleString('zh-CN');
+      }catch(e){}
+    }
+    td6.textContent=dateStr;
+    td6.style.cssText='font-size:12px;color:#888;';
+
+    // 操作：通过/拒绝（待审核时）+ 删除（始终显示）
+    var td7=document.createElement('td');
+    var btnSpacing='margin-right:4px;padding:6px 12px;border:none;border-radius:8px;font-size:12px;cursor:pointer;';
+    if(status==='pending'){
+      var approveBtn=document.createElement('button');
+      approveBtn.textContent='通过';
+      approveBtn.style.cssText='background:linear-gradient(135deg,#66BB6A,#4CAF50);color:#fff;'+btnSpacing;
+      (function(id){approveBtn.onclick=function(){approveUnlockRecord(id);};})(record.id);
+      td7.appendChild(approveBtn);
+
+      var rejectBtn=document.createElement('button');
+      rejectBtn.textContent='拒绝';
+      rejectBtn.style.cssText='background:#F5F5F5;color:#666;'+btnSpacing;
+      (function(id){rejectBtn.onclick=function(){rejectUnlockRecord(id);};})(record.id);
+      td7.appendChild(rejectBtn);
+    }
+
+    var delBtn=document.createElement('button');
+    delBtn.textContent='删除';
+    delBtn.style.cssText='background:#FFEBEE;color:#F44336;'+btnSpacing;
+    (function(id){delBtn.onclick=function(){deleteUnlockRecord(id);};})(record.id);
+    td7.appendChild(delBtn);
+
+    tr.appendChild(td1);
+    tr.appendChild(td2);
+    tr.appendChild(td3);
+    tr.appendChild(td4);
+    tr.appendChild(td5);
+    tr.appendChild(td6);
+    tr.appendChild(td7);
+    tbody.appendChild(tr);
+  });
+}
+
+function deleteUnlockRecord(id){
+  if(!id&&id!==0) return;
+  if(!confirm('确认删除此记录？删除后不可恢复。')) return;
+  var xhr=new XMLHttpRequest();
+  xhr.open('DELETE','/api/admin/unlock-contact-requests/'+id,true);
+  xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
+  xhr.onreadystatechange=function(){
+    if(xhr.readyState===4){
+      if(xhr.status===200){
+        alert('已删除');
+        loadUnlockRecords();
+      }else{
+        alert('删除失败');
+      }
+    }
+  };
+  xhr.send();
+}
+
+function approveUnlockRecord(id){
+  if(!id&&id!==0) return;
+  if(!confirm('确认通过此查看联系方式申请？通过后用户将能看到对方完整联系方式。')) return;
+  var xhr=new XMLHttpRequest();
+  xhr.open('PUT','/api/admin/unlock-contact-requests/'+id+'/approve',true);
+  xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
+  xhr.setRequestHeader('Content-Type','application/json');
+  xhr.onreadystatechange=function(){
+    if(xhr.readyState===4){
+      if(xhr.status===200){
+        alert('✓ 已通过审核');
+        loadUnlockRecords();
+      }else{
+        alert('操作失败');
+      }
+    }
+  };
+  xhr.send(JSON.stringify({admin_note:'管理员审核通过'}));
+}
+
+function rejectUnlockRecord(id){
+  if(!id&&id!==0) return;
+  if(!confirm('确认拒绝此申请？')) return;
+  var xhr=new XMLHttpRequest();
+  xhr.open('PUT','/api/admin/unlock-contact-requests/'+id+'/reject',true);
+  xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
+  xhr.setRequestHeader('Content-Type','application/json');
+  xhr.onreadystatechange=function(){
+    if(xhr.readyState===4){
+      if(xhr.status===200){
+        alert('已拒绝');
+        loadUnlockRecords();
+      }else{
+        alert('操作失败');
+      }
+    }
+  };
+  xhr.send(JSON.stringify({admin_note:'管理员拒绝'}));
+}
+
+function toggleSelectAllUnlock(checkbox){
+  var rows=document.querySelectorAll('#unlockRecordsTbody tr');
+  rows.forEach(function(row){
+    var status=row.getAttribute('data-status');
+    if(status==='pending'){
+      var cb=row.querySelector('input[type="checkbox"]');
+      if(cb){cb.checked=checkbox.checked;}
+      var id=row.getAttribute('data-id');
+      if(checkbox.checked) selectedUnlockIds.add(id); else selectedUnlockIds.delete(id);
+    }
+  });
+}
+
+function batchApproveUnlockRecords(){
+  var checkboxes=document.querySelectorAll('#unlockRecordsTbody input[type="checkbox"]:checked');
+  var ids=[];
+  checkboxes.forEach(function(cb){
+    var row=cb.closest('tr');
+    var id=row.getAttribute('data-id');
+    var status=row.getAttribute('data-status');
+    if(status==='pending') ids.push(id);
+  });
+  if(ids.length===0){alert('请先勾选要通过的记录（仅待审核状态可选）');return;}
+  if(!confirm('确认批量通过 '+ids.length+' 条申请？')) return;
+  var completed=0,failed=0;
+  ids.forEach(function(id){
+    var xhr=new XMLHttpRequest();
+    xhr.open('PUT','/api/admin/unlock-contact-requests/'+id+'/approve',true);
+    xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
+    xhr.setRequestHeader('Content-Type','application/json');
+    xhr.onreadystatechange=function(){
+      if(xhr.readyState===4){
+        if(xhr.status===200) completed++; else failed++;
+        if(completed+failed===ids.length){
+          selectedUnlockIds.clear();
+          var allCb=document.getElementById('selectAllUnlock');
+          if(allCb) allCb.checked=false;
+          alert('批量完成：成功 '+completed+' 条，失败 '+failed+' 条');
+          loadUnlockRecords();
+        }
+      }
+    };
+    xhr.send(JSON.stringify({admin_note:'批量审核通过'}));
+  });
+}
+
+// 自动刷新保证金列表（每60秒）
+var depositRefreshTimer=null;
+function startDepositAutoRefresh(){
+  if(depositRefreshTimer) clearInterval(depositRefreshTimer);
+  depositRefreshTimer=setInterval(function(){
+    var depositsTab=document.getElementById('deposits-tab');
+    if(depositsTab&&depositsTab.classList.contains('active')){
+      loadDeposits();
+    }
+  },60000);
+}
+
+// 页面加载时启动自动刷新
+window.addEventListener('load',function(){
+  startDepositAutoRefresh();
+});
+
+function logout(){localStorage.removeItem('admin_token');document.cookie='admin_token=;path=/;max-age=0';window.location.href='/jzxr/admin';}
+loadData();
+</script>
+</body>
+</html>

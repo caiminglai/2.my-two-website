@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>管理后台</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif; background: linear-gradient(180deg, #FFF0F5 0%, #FFE4E9 30%, #FFD6E0 100%); color: #333; min-height: 100vh; }
+    
+    .header { background: linear-gradient(135deg, #FF69B4, #FF85B3); color: #fff; padding: 20px; text-align: center; box-shadow: 0 4px 15px rgba(255,105,180,0.3); }
+    .header h1 { font-size: 18px; font-weight: 600; text-shadow: 1px 1px 2px rgba(255,105,180,0.3); }
+    .header p { font-size: 12px; opacity: 0.9; margin-top: 4px; }
+    
+    .container { padding: 15px; padding-bottom: 80px; }
+    
+    .tabs { display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap; }
+    .tab { flex: 1 1 auto; min-width: 60px; padding: 10px 6px; background: #fff; border: 2px solid #FFE4E9; border-radius: 14px; text-align: center; font-size: 13px; font-weight: 500; color: #FF85B3; cursor: pointer; transition: all 0.2s; }
+    .tab:hover { background: #FFF5F8; transform: translateY(-2px); }
+    .tab.active { border-color: #FF69B4; color: #fff; background: linear-gradient(135deg, #FF69B4, #FF85B3); box-shadow: 0 4px 15px rgba(255,105,180,0.3); }
+    
+    .search-box { background: #fff; border-radius: 18px; padding: 16px; margin-bottom: 15px; box-shadow: 0 5px 20px rgba(255,150,180,0.15); border: 2px solid #FFE4E9; }
+    .search-box input { width: 100%; padding: 10px 14px; border: 2px solid #FFB6C1; border-radius: 12px; font-size: 14px; outline: none; margin-bottom: 10px; background: #FFF5F8; color: #333; }
+    .search-box input:focus { border-color: #FF69B4; background: #fff; }
+    .search-box label { font-size: 14px; color: #FF69B4; margin-bottom: 6px; display: block; font-weight: 500; }
+    .search-box .checkbox-row { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; font-size: 13px; color: #666; }
+    .search-box .checkbox-row input { width: auto; margin: 0; }
+    .search-box select { width: 100%; padding: 10px 14px; border: 2px solid #FFB6C1; border-radius: 12px; font-size: 14px; outline: none; margin-bottom: 10px; background: #FFF5F8; color: #333; }
+    
+    .btn-search { width: 100%; padding: 12px; background: linear-gradient(135deg, #FF69B4, #FF85B3); color: #fff; border: none; border-radius: 12px; font-size: 15px; font-weight: 500; margin-top: 8px; cursor: pointer; box-shadow: 0 3px 12px rgba(255,105,180,0.3); transition: all 0.2s; }
+    .btn-search:hover { transform: scale(1.02); box-shadow: 0 4px 15px rgba(255,105,180,0.4); }
+    
+    .user-card { background: #fff; border-radius: 18px; padding: 16px; margin-bottom: 12px; box-shadow: 0 5px 20px rgba(255,150,180,0.15); border: 2px solid #FFE4E9; transition: all 0.3s; }
+    .user-card:hover { transform: translateY(-4px); box-shadow: 0 8px 28px rgba(255,150,180,0.25); }
+    .user-card .avatar { width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, #FFF0F5, #FFE4E9); display: flex; align-items: center; justify-content: center; color: #FF69B4; font-weight: bold; font-size: 18px; overflow: hidden; border: 2px solid #FFB6C1; }
+    .user-card .avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .user-card .info { flex: 1; margin-left: 12px; }
+    .user-card .info .name { font-size: 16px; font-weight: 600; color: #333; }
+    .user-card .info .desc { font-size: 13px; color: #999; margin-top: 4px; }
+    .user-card .contact { font-size: 14px; color: #666; margin-top: 10px; padding-top: 10px; border-top: 1px solid #FFE4E9; }
+    .user-card .contact span { color: #FF69B4; font-weight: 500; }
+    
+    .record-card { background: #fff; border-radius: 18px; padding: 16px; margin-bottom: 12px; box-shadow: 0 5px 20px rgba(255,150,180,0.15); border: 2px solid #FFE4E9; transition: all 0.3s; }
+    .record-card:hover { transform: translateY(-4px); box-shadow: 0 8px 28px rgba(255,150,180,0.25); }
+    .record-card .status { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 500; margin-right: 4px; }
+    .record-card .status.unlocked { background: #E8F5E9; color: #4CAF50; border: 1px solid #A5D6A7; }
+    .record-card .status.pending { background: #FFF3E0; color: #E67E22; border: 1px solid #FFCC80; }
+    .record-card .status.rejected { background: #FFEBEE; color: #E53935; border: 1px solid #FFCDD2; }
+    .record-card .status.approved { background: #E8F5E9; color: #4CAF50; border: 1px solid #A5D6A7; }
+    .record-card .time { font-size: 12px; color: #999; margin-top: 6px; }
+    
+    .btn-unlock { width: 100%; padding: 12px; background: linear-gradient(135deg, #6BAF7D, #5A9E6C); color: #fff; border: none; border-radius: 12px; font-size: 15px; font-weight: 500; margin-top: 12px; cursor: pointer; box-shadow: 0 3px 12px rgba(107,175,125,0.3); transition: all 0.2s; }
+    .btn-unlock:hover { transform: scale(1.02); box-shadow: 0 4px 15px rgba(107,175,125,0.4); }
+    .btn-edit { width: 100%; padding: 10px; background: linear-gradient(135deg, #FFF0F5, #FFE4E9); color: #FF69B4; border: 1px solid #FFB6C1; border-radius: 12px; font-size: 14px; margin-top: 8px; cursor: pointer; transition: all 0.2s; }
+    .btn-edit:hover { background: #FFE4E9; transform: scale(1.02); }
+    .btn-approve { padding: 8px 16px; background: linear-gradient(135deg, #6BAF7D, #5A9E6C); color: #fff; border: none; border-radius: 10px; font-size: 13px; font-weight: 500; cursor: pointer; margin-right: 8px; box-shadow: 0 3px 10px rgba(107,175,125,0.3); transition: all 0.2s; }
+    .btn-approve:hover { transform: scale(1.05); }
+    .btn-reject { padding: 8px 16px; background: linear-gradient(135deg, #FF8A80, #FF5252); color: #fff; border: none; border-radius: 10px; font-size: 13px; font-weight: 500; cursor: pointer; margin-right: 8px; box-shadow: 0 3px 10px rgba(255,82,82,0.3); transition: all 0.2s; }
+    .btn-reject:hover { transform: scale(1.05); }
+    .btn-delete { padding: 8px 16px; background: #FFF5F8; color: #FF69B4; border: 1px solid #FFB6C1; border-radius: 10px; font-size: 13px; cursor: pointer; transition: all 0.2s; }
+    .btn-delete:hover { background: #FFE4E9; transform: scale(1.05); }
+    
+    .btn-logout { width: 100%; padding: 12px; background: linear-gradient(135deg, #FFF0F5, #FFE4E9); color: #FF69B4; border: 2px solid #FFB6C1; border-radius: 12px; font-size: 14px; margin-top: 15px; cursor: pointer; transition: all 0.2s; }
+    .btn-logout:hover { background: #FFE4E9; transform: scale(1.02); }
+    
+    .loading, .empty { text-align: center; padding: 40px; color: #FF85B3; font-size: 14px; }
+    
+    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,150,180,0.3); display: flex; align-items: center; justify-content: center; z-index: 1000; display: none; backdrop-filter: blur(5px); }
+    .modal-overlay.show { display: flex; }
+    .modal { background: #fff; border-radius: 20px; padding: 24px; margin: 20px; width: 90%; max-width: 360px; max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(255,105,180,0.3); border: 2px solid #FFB6C1; }
+    .modal h3 { font-size: 17px; color: #FF69B4; text-align: center; margin-bottom: 12px; }
+    .modal p { font-size: 14px; color: #FF85B3; text-align: center; margin-bottom: 15px; }
+    .modal input, .modal select { width: 100%; padding: 12px 14px; border: 2px solid #FFB6C1; border-radius: 12px; font-size: 14px; outline: none; margin-bottom: 10px; background: #FFF5F8; color: #333; }
+    .modal input:focus, .modal select:focus { border-color: #FF69B4; background: #fff; }
+    .modal label { display: block; font-size: 14px; color: #FF69B4; margin-bottom: 4px; margin-top: 10px; font-weight: 500; }
+    .modal textarea { width: 100%; padding: 12px 14px; border: 2px solid #FFB6C1; border-radius: 12px; font-size: 14px; outline: none; margin-bottom: 10px; min-height: 60px; resize: vertical; font-family: inherit; background: #FFF5F8; color: #333; }
+    .modal-btns { display: flex; gap: 12px; margin-top: 15px; }
+    .modal-btns button { flex: 1; padding: 12px; border-radius: 12px; font-size: 14px; border: none; cursor: pointer; transition: all 0.2s; }
+    .modal-btns .confirm { background: linear-gradient(135deg, #FF69B4, #FF85B3); color: #fff; box-shadow: 0 4px 15px rgba(255,105,180,0.4); }
+    .modal-btns .cancel { background: #FFF5F8; color: #FF69B4; border: 1px solid #FFB6C1; }
+    .modal-btns button:hover { transform: scale(1.03); }
+    
+    .avatar-upload { text-align: center; margin-bottom: 15px; }
+    .avatar-upload .preview { width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, #FFF0F5, #FFE4E9); margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 2px dashed #FFB6C1; }
+    .avatar-upload .preview img { width: 100%; height: 100%; object-fit: cover; }
+    .avatar-upload input[type="file"] { display: none; }
+    .avatar-upload .btn-upload { padding: 8px 16px; background: linear-gradient(135deg, #FFF0F5, #FFE4E9); color: #FF69B4; border: 1px solid #FFB6C1; border-radius: 10px; font-size: 13px; cursor: pointer; transition: all 0.2s; }
+    .avatar-upload .btn-upload:hover { background: #FFE4E9; transform: scale(1.05); }
+    
+    .success-toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.8); color: #fff; padding: 16px 24px; border-radius: 12px; font-size: 14px; z-index: 2000; display: none; }
+    .success-toast.show { display: block; }
+    
+    .flex { display: flex; align-items: center; }
+    .label { font-size: 13px; color: #999; margin-bottom: 6px; display: block; }
+    .section { display: none; }
+    .section.active { display: block; }
+    
+    .pagination { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 20px; padding: 15px; background: #fff; border-radius: 12px; box-shadow: 0 2px 10px rgba(255,150,180,0.15); }
+    .pagination-btn { padding: 10px 24px; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s; background: linear-gradient(135deg, #FF69B4, #FF85B3); color: #fff; }
+    .pagination-btn:disabled { background: #f0e4d4; color: #B5A698; cursor: not-allowed; }
+    .pagination-btn:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(255,105,180,0.3); }
+    .pagination-text { font-size: 15px; color: #FF69B4; font-weight: 500; }
+    
+    .report-content { font-size: 13px; color: #666; margin-top: 8px; padding: 8px; background: #FFF5F8; border-radius: 10px; word-break: break-word; border: 1px solid #FFE4E9; }
+    .report-user { font-size: 14px; font-weight: 600; color: #333; margin-bottom: 4px; }
+    .report-meta { font-size: 12px; color: #999; margin-bottom: 4px; }
+    
+    .deposit-amount { font-size: 18px; font-weight: 700; color: #FF69B4; margin: 6px 0; text-shadow: 1px 1px 3px rgba(255,105,180,0.3); }
+    .proof-image { width: 100%; max-height: 200px; object-fit: contain; margin-top: 10px; border-radius: 10px; border: 2px solid #FFE4E9; cursor: pointer; transition: all 0.2s; }
+    .proof-image:hover { transform: scale(1.02); box-shadow: 0 4px 15px rgba(255,150,180,0.3); }
+    .proof-placeholder { text-align: center; padding: 20px; color: #999; font-size: 13px; background: #FFF5F8; border-radius: 10px; margin-top: 10px; border: 1px solid #FFE4E9; }
+    
+    .action-row { display: flex; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #FFE4E9; }
+
+    .user-card .info .name-strong { font-size: 17px; font-weight: 700; color: #333; }
+    .user-card .info .user-id-small { font-size: 12px; color: #999; margin-top: 2px; }
+
+    .record-card .mini-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #FFF0F5, #FFE4E9); display: inline-flex; align-items: center; justify-content: center; color: #FF69B4; font-weight: bold; font-size: 14px; overflow: hidden; border: 2px solid #FFB6C1; flex-shrink: 0; vertical-align: middle; }
+    .record-card .mini-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+    .record-card .user-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+    .record-card .user-row .user-text { font-size: 14px; color: #333; font-weight: 600; }
+    .record-card .user-row .user-id-text { font-size: 12px; color: #999; font-weight: normal; }
+
+    .record-card .arrow { color: #FF69B4; font-size: 18px; font-weight: bold; margin: 0 6px; }
+
+    .btn-proof { padding: 8px 14px; background: linear-gradient(135deg, #FFB6C1, #FF85B3); color: #fff; border: none; border-radius: 10px; font-size: 13px; font-weight: 500; cursor: pointer; box-shadow: 0 2px 8px rgba(255,105,180,0.25); transition: all 0.2s; margin-top: 6px; }
+    .btn-proof:hover { transform: scale(1.03); }
+
+    .proof-view-modal .proof-viewer { max-width: 90%; max-height: 80vh; width: auto; border-radius: 16px; border: 3px solid #FFB6C1; box-shadow: 0 10px 40px rgba(255,105,180,0.4); cursor: zoom-in; background: #fff; }
+    .proof-view-modal { align-items: center !important; justify-content: center !important; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>管理后台</h1>
+    <p>用户管理 · 举报审核 · 保证金审核</p>
+  </div>
+  
+  <div class="container">
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('users')">用户管理</div>
+      <div class="tab" onclick="switchTab('records')">解锁记录</div>
+      <div class="tab" onclick="switchTab('reports')">举报管理</div>
+      <div class="tab" onclick="switchTab('deposits')">保证金</div>
+      <div class="tab" onclick="switchTab('fields')">自定义筛选</div>
+    </div>
+    
+    <!-- 用户管理 -->
+    <div id="usersSection" class="section active">
+      <div class="search-box">
+        <label>搜索（按昵称/城市/联系方式）</label>
+        <input type="text" id="searchInput" placeholder="输入搜索关键词">
+        <div class="checkbox-row">
+          <input type="checkbox" id="exactMatchInput">
+          <span>精确匹配（只显示完全相同的结果）</span>
+        </div>
+        <button class="btn-search" onclick="searchUsers()">搜索 / 刷新</button>
+      </div>
+      <div id="userList"></div>
+    </div>
+    
+    <!-- 解锁记录 -->
+    <div id="recordsSection" class="section">
+      <div id="recordsList"></div>
+    </div>
+
+    <!-- 举报管理 -->
+    <div id="reportsSection" class="section">
+      <div class="search-box">
+        <label>筛选举报状态</label>
+        <select id="reportStatusInput">
+          <option value="">全部</option>
+          <option value="pending">待处理</option>
+          <option value="approved">已通过</option>
+          <option value="rejected">已驳回</option>
+        </select>
+        <button class="btn-search" onclick="loadReports()">刷新举报列表</button>
+      </div>
+      <div id="reportsList"></div>
+    </div>
+
+    <!-- 保证金审核 -->
+    <div id="depositsSection" class="section">
+      <div class="search-box">
+        <label>筛选保证金状态</label>
+        <select id="depositStatusInput">
+          <option value="">全部</option>
+          <option value="pending">待审核</option>
+          <option value="approved">已通过</option>
+          <option value="rejected">已驳回</option>
+        </select>
+        <button class="btn-search" onclick="loadDeposits()">刷新保证金列表</button>
+      </div>
+      <div id="depositsList"></div>
+    </div>
+
+    <!-- 自定义筛选字段 -->
+    <div id="fieldsSection" class="section">
+      <div class="search-box">
+        <label>字段名（英文，如：pet、hobby、smoke）</label>
+        <input type="text" id="fieldKeyInput" placeholder="字段名">
+        <label>显示名（中文，如：宠物、爱好、吸烟）</label>
+        <input type="text" id="fieldLabelInput" placeholder="显示名">
+        <label>类型</label>
+        <select id="fieldTypeInput">
+          <option value="text">文本</option>
+          <option value="select">下拉选项</option>
+        </select>
+        <label>选项（逗号分隔，如：火神,水神,草神，文本类型可留空）</label>
+        <input type="text" id="fieldOptionsInput" placeholder="用逗号分隔多个选项">
+        <label>描述（可选）</label>
+        <input type="text" id="fieldDescInput" placeholder="字段用途说明">
+        <button class="btn-search" onclick="saveField()">添加/更新字段</button>
+      </div>
+      <div id="fieldsList"></div>
+    </div>
+    
+    <button class="btn-logout" onclick="logout()">退出登录</button>
+  </div>
+  
+  <!-- 解锁确认弹窗 -->
+  <div class="modal-overlay" id="unlockModal" onclick="closeModal('unlockModal')">
+    <div class="modal" onclick="event.stopPropagation()">
+      <h3>确认解锁</h3>
+      <p>确定要解锁此用户的联系方式吗？</p>
+      <input type="text" id="modalViewerId" placeholder="查看者ID（可选）">
+      <div class="modal-btns">
+        <button class="cancel" onclick="closeModal('unlockModal')">取消</button>
+        <button class="confirm" onclick="confirmUnlock()">确认</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 编辑用户弹窗 -->
+  <div class="modal-overlay" id="editModal" onclick="closeModal('editModal')">
+    <div class="modal" onclick="event.stopPropagation()">
+      <h3>编辑用户资料</h3>
+      
+      <div class="avatar-upload">
+        <div class="preview" id="avatarPreview">
+          <span style="color:#999;font-size:12px;">点击上传</span>
+        </div>
+        <input type="file" id="avatarFile" accept="image/*" onchange="previewAvatar(this)">
+        <button class="btn-upload" onclick="document.getElementById('avatarFile').click()">选择头像</button>
+      </div>
+      
+      <label>昵称</label>
+      <input type="text" id="editName" placeholder="昵称">
+      
+      <label>性别</label>
+      <select id="editGender">
+        <option value="">请选择</option>
+        <option value="男">男</option>
+        <option value="女">女</option>
+      </select>
+      
+      <label>年龄</label>
+      <input type="text" id="editAge" placeholder="年龄">
+      
+      <label>城市</label>
+      <input type="text" id="editCity" placeholder="城市">
+      
+      <label>联系方式</label>
+      <input type="text" id="editContact" placeholder="联系方式">
+      
+      <div class="modal-btns">
+        <button class="cancel" onclick="closeModal('editModal')">取消</button>
+        <button class="confirm" onclick="saveUser()">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 举报处理弹窗 -->
+  <div class="modal-overlay" id="reportModal" onclick="closeModal('reportModal')">
+    <div class="modal" onclick="event.stopPropagation()">
+      <h3 id="reportModalTitle">处理举报</h3>
+      <label>处理备注（可选）</label>
+      <textarea id="reportModalNote" placeholder="输入处理说明"></textarea>
+      <div class="modal-btns">
+        <button class="cancel" onclick="closeModal('reportModal')">取消</button>
+        <button class="confirm" id="reportModalConfirm">确认处理</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 保证金处理弹窗 -->
+  <div class="modal-overlay" id="depositModal" onclick="closeModal('depositModal')">
+    <div class="modal" onclick="event.stopPropagation()">
+      <h3 id="depositModalTitle">审核保证金</h3>
+      <label>审核备注（可选）</label>
+      <textarea id="depositModalNote" placeholder="输入审核说明"></textarea>
+      <div class="modal-btns">
+        <button class="cancel" onclick="closeModal('depositModal')">取消</button>
+        <button class="confirm" id="depositModalConfirm">确认审核</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 凭证图片查看弹窗 -->
+  <div class="modal-overlay" id="proofViewModal" onclick="closeModal('proofViewModal')">
+    <img class="proof-viewer" id="proofViewerImg" src="" alt="凭证图片" onclick="window.open(this.src, '_blank')">
+  </div>
+
+  <div class="success-toast" id="successToast">操作成功！</div>
+
+  <script>
+    // 自动检测是否需要路径前缀
+    const API_BASE = window.location.pathname.includes('/jzxr') ? '/jzxr' : '';
+    
+    let token = localStorage.getItem('admin_token');
+    let currentUserId = null;
+    let currentEditId = null;
+    let currentReportId = null;
+    let currentDepositId = null;
+    let allUsers = [];
+    let currentPage = 1;
+    const pageSize = 20;
+    
+    if (!token) {
+      window.location.href = 'm-login.html';
+    }
+    
+    // 解析头像路径为完整 URL
+    function resolveAvatarUrl(avatar) {
+      if (!avatar) return '';
+      if (typeof avatar !== 'string') return '';
+      if (avatar.startsWith('http')) return avatar;
+      let p = avatar.replace(/^\/+/, '');
+      if (p.startsWith('jzxr/')) return '/' + p;
+      if (p.startsWith('avatars/') || p.startsWith('uploads/')) {
+        return (API_BASE || '/jzxr') + '/' + p;
+      }
+      return (API_BASE || '/jzxr') + '/avatars/' + p;
+    }
+
+    // 解析凭证/图片路径为完整 URL
+    function resolveImageUrl(path) {
+      if (!path) return '';
+      if (typeof path !== 'string') return '';
+      if (path.startsWith('http')) return path;
+      let p = path.replace(/^\/+/, '');
+      if (p.startsWith('jzxr/')) return '/' + p;
+      if (p.startsWith('uploads/') || p.startsWith('avatars/')) {
+        return (API_BASE || '/jzxr') + '/' + p;
+      }
+      return (API_BASE || '/jzxr') + '/uploads/' + p;
+    }
+
+    // 根据用户信息生成头像 HTML（小头像，用于举报/解锁记录）
+    function buildMiniAvatarHtml(user, fallbackText) {
+      const fallback = (fallbackText || '?').toString().charAt(0).toUpperCase();
+      if (!user || !user.data) {
+        return `<div class="mini-avatar">${fallback}</div>`;
+      }
+      const avatar = user.data.avatar;
+      if (avatar) {
+        const url = resolveAvatarUrl(avatar);
+        return `<div class="mini-avatar"><img src="${url}" onerror="this.parentElement.innerHTML='${fallback}'"></div>`;
+      }
+      return `<div class="mini-avatar">${fallback}</div>`;
+    }
+
+    // 根据用户信息生成头像 HTML（大头像，用于用户卡片）
+    function buildAvatarHtml(user) {
+      const name = (user && user.data && user.data.name) || '';
+      const fallback = (name.charAt(0) || '?').toUpperCase();
+      if (!user || !user.data) {
+        return `<div class="avatar">${fallback}</div>`;
+      }
+      const avatar = user.data.avatar;
+      if (avatar) {
+        const url = resolveAvatarUrl(avatar);
+        return `<div class="avatar"><img src="${url}" onerror="this.parentElement.innerHTML='${fallback}'"></div>`;
+      }
+      return `<div class="avatar">${fallback}</div>`;
+    }
+
+    // 根据 allUsers 中查找用户（同时兼容 id 为数字或字符串
+    function findUserById(id) {
+      if (id == null) return null;
+      const s = String(id);
+      return allUsers.find(u => String(u.id) === s);
+    }
+
+    // 显示凭证图片弹窗
+    function viewProofImage(path) {
+      if (!path) return;
+      const url = resolveImageUrl(path);
+      document.getElementById('proofViewerImg').src = url;
+      document.getElementById('proofViewModal').classList.add('show');
+    }
+
+    // 页面加载时自动加载用户列表
+    window.onload = function() {
+      loadAllUsers();
+    };
+    
+    function switchTab(tab) {
+      const tabNames = ['users', 'records', 'reports', 'deposits', 'fields'];
+      document.querySelectorAll('.tab').forEach((t, i) => {
+        t.classList.toggle('active', tabNames[i] === tab);
+      });
+      document.getElementById('usersSection').classList.toggle('active', tab === 'users');
+      document.getElementById('recordsSection').classList.toggle('active', tab === 'records');
+      document.getElementById('reportsSection').classList.toggle('active', tab === 'reports');
+      document.getElementById('depositsSection').classList.toggle('active', tab === 'deposits');
+      document.getElementById('fieldsSection').classList.toggle('active', tab === 'fields');
+      
+      if (tab === 'records') loadUnlockRecords();
+      if (tab === 'fields') loadCustomFields();
+      if (tab === 'reports') loadReports();
+      if (tab === 'deposits') loadDeposits();
+    }
+
+    async function loadCustomFields() {
+      const list = document.getElementById('fieldsList');
+      list.innerHTML = '<div class="loading">加载中...</div>';
+      try {
+        const res = await fetch(API_BASE + '/api/custom-fields');
+        const data = await res.json();
+        if (data.success && data.data && data.data.length > 0) {
+          list.innerHTML = data.data.map(f => `
+            <div class="user-card" style="display:flex;align-items:center;justify-content:space-between;padding:12px;margin-bottom:8px;background:#fff;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+              <div style="flex:1;">
+                <div style="font-weight:600;color:#333;margin-bottom:4px;">${f.field_label}</div>
+                <div style="font-size:12px;color:#999;">字段名：${f.field_key} · 类型：${f.field_type} · 使用：${f.use_count || 0} 次</div>
+                ${f.options && f.options.length ? `<div style="font-size:12px;color:#6BAF7D;margin-top:4px;">选项：${f.options.join(' / ')}</div>` : ''}
+                ${f.description ? `<div style="font-size:12px;color:#666;margin-top:4px;">${f.description}</div>` : ''}
+              </div>
+              <button style="padding:6px 12px;background:#ff4444;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;" onclick="deleteField(${f.id})">删除</button>
+            </div>
+          `).join('');
+        } else {
+          list.innerHTML = '<div style="text-align:center;padding:30px;color:#999;">暂无自定义字段</div>';
+        }
+      } catch (e) {
+        list.innerHTML = '<div style="text-align:center;padding:30px;color:#ff4444;">加载失败</div>';
+      }
+    }
+
+    async function saveField() {
+      const key = document.getElementById('fieldKeyInput').value.trim();
+      const label = document.getElementById('fieldLabelInput').value.trim();
+      const type = document.getElementById('fieldTypeInput').value;
+      const options = document.getElementById('fieldOptionsInput').value.trim();
+      const desc = document.getElementById('fieldDescInput').value.trim();
+      if (!key || !label) { alert('字段名和显示名不能为空'); return; }
+      if (!/^[a-z0-9_]+$/.test(key.toLowerCase())) { alert('字段名只能包含小写字母、数字和下划线'); return; }
+      try {
+        const res = await fetch(API_BASE + '/api/admin/custom-fields', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+          body: JSON.stringify({ field_key: key.toLowerCase(), field_label: label, field_type: type, field_options: options, description: desc })
+        });
+        const data = await res.json();
+        if (data.success) {
+          document.getElementById('fieldKeyInput').value = '';
+          document.getElementById('fieldLabelInput').value = '';
+          document.getElementById('fieldOptionsInput').value = '';
+          document.getElementById('fieldDescInput').value = '';
+          loadCustomFields();
+          showToast('保存成功！');
+        } else {
+          alert('保存失败：' + data.message);
+        }
+      } catch (e) {
+        alert('请求失败：' + e.message);
+      }
+    }
+
+    async function deleteField(id) {
+      if (!confirm('确认删除此字段？')) return;
+      try {
+        const res = await fetch(API_BASE + '/api/admin/custom-fields/' + id, {
+          method: 'DELETE',
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const data = await res.json();
+        if (data.success) {
+          loadCustomFields();
+        } else {
+          alert('删除失败：' + data.message);
+        }
+      } catch (e) {
+        alert('请求失败：' + e.message);
+      }
+    }
+    
+    async function loadAllUsers() {
+      const userList = document.getElementById('userList');
+      userList.innerHTML = '<div class="loading">加载中...</div>';
+      
+      try {
+        const response = await fetch(API_BASE + '/api/users', {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const data = await response.json();
+        
+        if (data.success && data.data && data.data.length > 0) {
+          allUsers = data.data;
+          currentPage = 1;
+          renderUsers();
+        } else {
+          userList.innerHTML = '<div class="empty">暂无用户数据</div>';
+        }
+      } catch (e) {
+        userList.innerHTML = '<div class="empty">加载失败，请重试</div>';
+      }
+    }
+    
+    function renderUsers() {
+      const userList = document.getElementById('userList');
+      const totalPages = Math.ceil(allUsers.length / pageSize);
+      const startIndex = (currentPage - 1) * pageSize;
+      const paginatedUsers = allUsers.slice(startIndex, startIndex + pageSize);
+      
+      let html = paginatedUsers.map(user => {
+        const contact = user.data?.contact || '未填写';
+        const masked = contact.length > 4 ? contact.slice(0, 2) + '***' + contact.slice(-2) : '***';
+        const name = user.data?.name || '未知';
+        const avatarHtml = buildAvatarHtml(user);
+        return `
+          <div class="user-card">
+            <div class="flex">
+              ${avatarHtml}
+              <div class="info">
+                <div class="name-strong">${name}</div>
+                <div class="user-id-small">ID: ${user.id}</div>
+                <div class="desc">${user.data?.city || ''} · ${user.data?.age || ''}岁</div>
+              </div>
+            </div>
+            <div class="contact">联系方式: <span>${masked}</span></div>
+            <button class="btn-unlock" onclick="showUnlockModal('${user.id}')">解锁联系方式</button>
+            <button class="btn-edit" onclick="showEditModal('${user.id}')">编辑资料</button>
+          </div>
+        `;
+      }).join('');
+      
+      // 分页控件
+      if (totalPages > 1) {
+        html += `
+          <div class="pagination">
+            <button onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''} class="pagination-btn">上一页</button>
+            <span class="pagination-text">第 ${currentPage} / ${totalPages} 页 · 共 ${allUsers.length} 人</span>
+            <button onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''} class="pagination-btn">下一页</button>
+          </div>
+        `;
+      }
+      
+      userList.innerHTML = html;
+    }
+    
+    function goToPage(page) {
+      const totalPages = Math.ceil(allUsers.length / pageSize);
+      if (page < 1 || page > totalPages) return;
+      currentPage = page;
+      renderUsers();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    
+    async function searchUsers() {
+      const keyword = document.getElementById('searchInput').value.trim();
+      const exactMatch = document.getElementById('exactMatchInput').checked;
+      
+      const userList = document.getElementById('userList');
+      
+      if (!keyword) {
+        loadAllUsers();
+        return;
+      }
+      
+      userList.innerHTML = '<div class="loading">搜索中...</div>';
+      
+      try {
+        const url = API_BASE + '/api/users/search?keyword=' + encodeURIComponent(keyword) + (exactMatch ? '&exact=true' : '');
+        const response = await fetch(url, {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const data = await response.json();
+        
+        if (data.success && data.data && data.data.length > 0) {
+          allUsers = data.data;
+          currentPage = 1;
+          renderUsers();
+        } else {
+          userList.innerHTML = '<div class="empty">未找到用户</div>';
+        }
+      } catch (e) {
+        userList.innerHTML = '<div class="empty">搜索失败</div>';
+      }
+    }
+    
+    function showUnlockModal(userId) {
+      currentUserId = userId;
+      document.getElementById('modalViewerId').value = '';
+      document.getElementById('unlockModal').classList.add('show');
+    }
+    
+    function showEditModal(userId) {
+      currentEditId = userId;
+      const user = allUsers.find(u => u.id === userId);
+      if (!user) return;
+      
+      document.getElementById('editName').value = user.data?.name || '';
+      document.getElementById('editGender').value = user.data?.gender || '';
+      document.getElementById('editAge').value = user.data?.age || '';
+      document.getElementById('editCity').value = user.data?.city || '';
+      document.getElementById('editContact').value = user.data?.contact || '';
+      
+      const avatar = user.data?.avatar;
+      const preview = document.getElementById('avatarPreview');
+      if (avatar) {
+        const url = resolveAvatarUrl(avatar);
+        preview.innerHTML = `<img src="${url}" onerror="this.parentElement.innerHTML='点击上传'">`;
+      } else {
+        preview.innerHTML = '<span style="color:#999;font-size:12px;">点击上传</span>';
+      }
+      
+      document.getElementById('editModal').classList.add('show');
+    }
+    
+    function previewAvatar(input) {
+      if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          document.getElementById('avatarPreview').innerHTML = `<img src="${e.target.result}">`;
+        };
+        reader.readAsDataURL(input.files[0]);
+      }
+    }
+    
+    function closeModal(modalId) {
+      document.getElementById(modalId).classList.remove('show');
+    }
+    
+    async function confirmUnlock() {
+      if (!currentUserId) return;
+      
+      try {
+        const response = await fetch(API_BASE + '/api/users/' + currentUserId + '/unlock-contact', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ viewer_id: document.getElementById('modalViewerId').value.trim() })
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+          closeModal('unlockModal');
+          showToast('解锁成功！');
+        } else {
+          alert('解锁失败: ' + (data.message || '未知错误'));
+        }
+      } catch (e) {
+        alert('解锁失败，请重试');
+      }
+    }
+    
+    async function saveUser() {
+      if (!currentEditId) return;
+      
+      const formData = new FormData();
+      const name = document.getElementById('editName').value.trim();
+      const gender = document.getElementById('editGender').value;
+      const age = document.getElementById('editAge').value.trim();
+      const city = document.getElementById('editCity').value.trim();
+      const contact = document.getElementById('editContact').value.trim();
+      
+      if (name) formData.append('name', name);
+      if (gender) formData.append('gender', gender);
+      if (age) formData.append('age', age);
+      if (city) formData.append('city', city);
+      if (contact) formData.append('contact', contact);
+      
+      const avatarFile = document.getElementById('avatarFile').files[0];
+      if (avatarFile) {
+        formData.append('avatar', avatarFile);
+      }
+      
+      try {
+        const response = await fetch(API_BASE + '/api/users/' + currentEditId, {
+          method: 'PUT',
+          headers: { 'Authorization': 'Bearer ' + token },
+          body: formData
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+          closeModal('editModal');
+          showToast('保存成功！');
+          loadAllUsers();
+        } else {
+          alert('保存失败: ' + (data.message || '未知错误'));
+        }
+      } catch (e) {
+        alert('保存失败，请重试');
+      }
+    }
+    
+    async function loadUnlockRecords() {
+      const recordsList = document.getElementById('recordsList');
+      recordsList.innerHTML = '<div class="loading">加载中...</div>';
+      
+      try {
+        const response = await fetch(API_BASE + '/api/admin/unlock-records', {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const d = await response.json();
+        
+        let records = [];
+        if (Array.isArray(d)) {
+          records = d;
+        } else if (d && Array.isArray(d.data)) {
+          records = d.data;
+        } else if (d && d.success && Array.isArray(d.data)) {
+          records = d.data;
+        }
+        
+        if (records && records.length > 0) {
+          recordsList.innerHTML = records.map(record => {
+            const viewerUser = record.viewer_data || findUserById(record.viewer_user_id || record.viewer_id);
+            const targetUser = record.target_data || findUserById(record.target_user_id || record.target_id);
+            
+            const viewerName = record.viewer_name || (viewerUser && viewerUser.data && viewerUser.data.name) || (record.viewer_user_id || record.viewer_id ? '用户' + (record.viewer_user_id || record.viewer_id) : '全部');
+            const viewerAvatar = record.viewer_avatar || (viewerUser && viewerUser.data && viewerUser.data.avatar);
+            const viewerId = record.viewer_user_id || record.viewer_id || (viewerUser && viewerUser.id) || '';
+            const targetName = record.target_name || (targetUser && targetUser.data && targetUser.data.name) || '用户' + (record.target_user_id || record.target_id || '');
+            const targetAvatar = record.target_avatar || (targetUser && targetUser.data && targetUser.data.avatar);
+            const targetId = record.target_user_id || record.target_id || (targetUser && targetUser.id) || '';
+            const targetContact = record.target_contact || (targetUser && targetUser.data && targetUser.data.contact);
+            
+            const viewerAvatarHtml = viewerAvatar
+              ? buildMiniAvatarHtml({ data: { avatar: viewerAvatar } }, viewerName)
+              : (viewerUser
+                  ? buildMiniAvatarHtml(viewerUser, viewerName)
+                  : `<div class="mini-avatar">${viewerName.toString().charAt(0).toUpperCase()}</div>`);
+            const targetAvatarHtml = targetAvatar
+              ? buildMiniAvatarHtml({ data: { avatar: targetAvatar } }, targetName)
+              : (targetUser
+                  ? buildMiniAvatarHtml(targetUser, targetName)
+                  : `<div class="mini-avatar">${targetName.toString().charAt(0).toUpperCase()}</div>`);
+            
+            return `
+              <div class="record-card">
+                <div class="flex" style="justify-content: space-between;">
+                  <div style="flex:1;">
+                    <div class="user-row">
+                      ${viewerAvatarHtml}
+                      <div style="display:flex;flex-direction:column;">
+                        <span class="user-text">${viewerName}</span>
+                        ${viewerId ? `<span class="user-id-text">ID: ${viewerId}</span>` : ''}
+                      </div>
+                      <span class="arrow">→</span>
+                      ${targetAvatarHtml}
+                      <div style="display:flex;flex-direction:column;">
+                        <span class="user-text">${targetName}</span>
+                        ${targetId ? `<span class="user-id-text">ID: ${targetId}</span>` : ''}
+                      </div>
+                    </div>
+                    ${targetContact ? `<div class="report-meta" style="color:#FF69B4;">联系方式: ${targetContact}</div>` : ''}
+                  </div>
+                  <span class="status unlocked">已解锁</span>
+                </div>
+                <div class="time">${new Date(record.created_at).toLocaleString('zh-CN')}</div>
+              </div>
+            `;
+          }).join('');
+        } else {
+          recordsList.innerHTML = '<div class="empty">暂无解锁记录</div>';
+        }
+      } catch (e) {
+        recordsList.innerHTML = '<div class="empty">加载失败</div>';
+      }
+    }
+
+    // ========== 举报管理 ==========
+    
+    async function loadReports() {
+      const list = document.getElementById('reportsList');
+      const status = document.getElementById('reportStatusInput').value;
+      list.innerHTML = '<div class="loading">加载中...</div>';
+      
+      try {
+        const url = API_BASE + '/api/reports' + (status ? '?status=' + encodeURIComponent(status) : '');
+        const response = await fetch(url, {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const d = await response.json();
+        
+        // 兼容多种数据结构：{success:true, data:[...]} 或直接返回数组
+        let reports = [];
+        if (Array.isArray(d)) {
+          reports = d;
+        } else if (d && Array.isArray(d.data)) {
+          reports = d.data;
+        } else if (d && d.success && Array.isArray(d.data)) {
+          reports = d.data;
+        }
+        
+        if (reports && reports.length > 0) {
+          list.innerHTML = reports.map(report => {
+            const statusText = report.status === 'pending' ? '待处理' : report.status === 'approved' ? '已通过' : report.status === 'rejected' ? '已驳回' : report.status || '未知';
+            
+            // 被举报用户信息（从 allUsers 中查找或使用返回的数据）
+            const reportedUser = report.reported_user_data || report.user_data || findUserById(report.reported_id);
+            const reportedName = report.reported_name || (reportedUser && reportedUser.data && reportedUser.data.name) || report.reported_id || '未知用户';
+            const reportedAvatar = report.reported_avatar || (reportedUser && reportedUser.data && reportedUser.data.avatar);
+            const reportedId = report.reported_id || (reportedUser && reportedUser.id);
+            
+            // 举报人信息
+            const reporterUser = report.reporter_user_data || findUserById(report.reporter_id);
+            const reporterName = report.reporter_name || (reporterUser && reporterUser.data && reporterUser.data.name) || '匿名';
+            const reporterAvatar = report.reporter_avatar || (reporterUser && reporterUser.data && reporterUser.data.avatar);
+            const reporterId = report.reporter_id || (reporterUser && reporterUser.id);
+            
+            // 头像 HTML
+            const reportedAvatarHtml = reportedAvatar
+              ? buildMiniAvatarHtml({ data: { avatar: reportedAvatar } }, reportedName)
+              : (reportedUser
+                  ? buildMiniAvatarHtml(reportedUser, reportedName)
+                  : `<div class="mini-avatar">${reportedName.toString().charAt(0).toUpperCase()}</div>`);
+            const reporterAvatarHtml = reporterAvatar
+              ? buildMiniAvatarHtml({ data: { avatar: reporterAvatar } }, reporterName)
+              : (reporterUser
+                  ? buildMiniAvatarHtml(reporterUser, reporterName)
+                  : (reporterName && reporterName !== '匿名'
+                      ? `<div class="mini-avatar">${reporterName.toString().charAt(0).toUpperCase()}</div>`
+                      : `<div class="mini-avatar">匿</div>`));
+            
+            // 凭证图片
+            const proofPath = report.proof_path || report.image || report.proof_image || '';
+            const proofBtn = proofPath
+              ? `<button class="btn-proof" onclick='viewProofImage(${JSON.stringify(proofPath)})'>📷 查看凭证图片</button>`
+              : '';
+            
+            return `
+              <div class="record-card">
+                <div class="flex" style="justify-content: space-between;">
+                  <div style="flex:1;">
+                    <div class="user-row">
+                      ${reportedAvatarHtml}
+                      <div style="display:flex;flex-direction:column;">
+                        <span class="user-text">被举报: ${reportedName}</span>
+                        ${reportedId ? `<span class="user-id-text">ID: ${reportedId}</span>` : ''}
+                      </div>
+                    </div>
+                    <div class="user-row">
+                      ${reporterAvatarHtml}
+                      <div style="display:flex;flex-direction:column;">
+                        <span class="user-text">举报人: ${reporterName}</span>
+                        ${reporterId ? `<span class="user-id-text">ID: ${reporterId}</span>` : ''}
+                      </div>
+                    </div>
+                    <div class="report-meta">类型: ${report.report_type || '未填写'}</div>
+                  </div>
+                  <span class="status ${report.status === 'pending' ? 'pending' : report.status === 'approved' ? 'approved' : 'rejected'}">${statusText}</span>
+                </div>
+                <div class="report-content">${report.description || '未填写描述'}</div>
+                ${report.admin_note ? `<div class="report-content" style="background:#E3F2FD;color:#1565C0;">管理员备注: ${report.admin_note}</div>` : ''}
+                ${proofBtn}
+                <div class="time">提交时间: ${new Date(report.created_at).toLocaleString('zh-CN')}</div>
+                ${report.status === 'pending' ? `
+                  <div class="action-row">
+                    <button class="btn-approve" onclick="openReportModal(${report.id}, 'approved')">通过</button>
+                    <button class="btn-reject" onclick="openReportModal(${report.id}, 'rejected')">驳回</button>
+                    <button class="btn-delete" onclick="deleteReport(${report.id})">删除</button>
+                  </div>
+                ` : `
+                  <div class="action-row">
+                    <button class="btn-delete" onclick="deleteReport(${report.id})">删除记录</button>
+                  </div>
+                `}
+              </div>
+            `;
+          }).join('');
+        } else {
+          list.innerHTML = '<div class="empty">暂无举报记录</div>';
+        }
+      } catch (e) {
+        list.innerHTML = '<div class="empty">加载失败</div>';
+      }
+    }
+    
+    function openReportModal(reportId, status) {
+      currentReportId = reportId;
+      document.getElementById('reportModalTitle').textContent = status === 'approved' ? '通过该举报' : '驳回该举报';
+      document.getElementById('reportModalNote').value = '';
+      document.getElementById('reportModalConfirm').textContent = status === 'approved' ? '确认通过' : '确认驳回';
+      document.getElementById('reportModal').setAttribute('data-status', status);
+      document.getElementById('reportModal').classList.add('show');
+    }
+    
+    async function confirmProcessReport() {
+      const status = document.getElementById('reportModal').getAttribute('data-status');
+      const adminNote = document.getElementById('reportModalNote').value.trim();
+      
+      try {
+        const response = await fetch(API_BASE + '/api/reports/' + currentReportId + '/status', {
+          method: 'PUT',
+          headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: status, admin_note: adminNote })
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+          closeModal('reportModal');
+          showToast('处理成功！');
+          loadReports();
+        } else {
+          alert('处理失败: ' + (data.message || '未知错误'));
+        }
+      } catch (e) {
+        alert('处理失败，请重试');
+      }
+    }
+    
+    async function deleteReport(reportId) {
+      if (!confirm('确认删除此举报记录？')) return;
+      
+      try {
+        const response = await fetch(API_BASE + '/api/reports/' + reportId, {
+          method: 'DELETE',
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+          showToast('删除成功！');
+          loadReports();
+        } else {
+          alert('删除失败: ' + (data.message || '未知错误'));
+        }
+      } catch (e) {
+        alert('删除失败，请重试');
+      }
+    }
+
+    // ========== 保证金审核 ==========
+    
+    async function loadDeposits() {
+      const list = document.getElementById('depositsList');
+      const status = document.getElementById('depositStatusInput').value;
+      list.innerHTML = '<div class="loading">加载中...</div>';
+      
+      try {
+        const url = API_BASE + '/api/admin/deposits' + (status ? '?status=' + encodeURIComponent(status) : '');
+        const response = await fetch(url, {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const data = await response.json();
+        
+        if (data.success && data.data && data.data.length > 0) {
+          list.innerHTML = data.data.map(deposit => {
+            const statusText = deposit.status === 'pending' ? '待审核' : deposit.status === 'approved' ? '已通过' : deposit.status === 'rejected' ? '已驳回' : deposit.status || '未知';
+            const userInfo = deposit.user_data || {};
+            const displayName = userInfo.name || deposit.user_id || '未知用户';
+            const proofPath = deposit.proof_path || '';
+            
+            let proofHtml = '';
+            if (proofPath) {
+              const proofUrl = proofPath.startsWith('http') ? proofPath : API_BASE + '/' + proofPath.replace(/^\/+/, '');
+              proofHtml = `<img class="proof-image" src="${proofUrl}" alt="凭证图片" onclick="window.open('${proofUrl}', '_blank')">`;
+            } else {
+              proofHtml = '<div class="proof-placeholder">未上传凭证图片</div>';
+            }
+            
+            return `
+              <div class="record-card">
+                <div class="flex" style="justify-content: space-between;">
+                  <div style="flex:1;">
+                    <div class="report-user">用户: ${displayName}</div>
+                    <div class="report-meta">ID: ${deposit.user_id} · 金额: ¥${Number(deposit.amount || 0).toFixed(2)}</div>
+                  </div>
+                  <span class="status ${deposit.status === 'pending' ? 'pending' : deposit.status === 'approved' ? 'approved' : 'rejected'}">${statusText}</span>
+                </div>
+                <div class="deposit-amount">¥${Number(deposit.amount || 0).toFixed(2)}</div>
+                ${proofHtml}
+                ${deposit.admin_note ? `<div class="report-content" style="background:#E3F2FD;color:#1565C0;">审核备注: ${deposit.admin_note}</div>` : ''}
+                <div class="time">提交时间: ${new Date(deposit.created_at).toLocaleString('zh-CN')}</div>
+                ${deposit.status === 'pending' ? `
+                  <div class="action-row">
+                    <button class="btn-approve" onclick="openDepositModal(${deposit.id}, 'approved')">通过</button>
+                    <button class="btn-reject" onclick="openDepositModal(${deposit.id}, 'rejected')">驳回</button>
+                  </div>
+                ` : `
+                  <div class="action-row">
+                    <button class="btn-edit" onclick="openDepositModal(${deposit.id}, '${deposit.status === 'approved' ? 'rejected' : 'approved'}')">重新处理</button>
+                  </div>
+                `}
+              </div>
+            `;
+          }).join('');
+        } else {
+          list.innerHTML = '<div class="empty">暂无保证金记录</div>';
+        }
+      } catch (e) {
+        list.innerHTML = '<div class="empty">加载失败</div>';
+      }
+    }
+    
+    function openDepositModal(depositId, status) {
+      currentDepositId = depositId;
+      document.getElementById('depositModalTitle').textContent = status === 'approved' ? '通过保证金审核' : '驳回保证金审核';
+      document.getElementById('depositModalNote').value = '';
+      document.getElementById('depositModalConfirm').textContent = status === 'approved' ? '确认通过' : '确认驳回';
+      document.getElementById('depositModal').setAttribute('data-status', status);
+      document.getElementById('depositModal').classList.add('show');
+    }
+    
+    async function confirmProcessDeposit() {
+      const status = document.getElementById('depositModal').getAttribute('data-status');
+      const adminNote = document.getElementById('depositModalNote').value.trim();
+      
+      try {
+        const response = await fetch(API_BASE + '/api/admin/deposits/' + status, {
+          method: 'PUT',
+          headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ids: [currentDepositId], admin_note: adminNote })
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+          closeModal('depositModal');
+          showToast('审核成功！');
+          loadDeposits();
+        } else {
+          alert('审核失败: ' + (data.message || '未知错误'));
+        }
+      } catch (e) {
+        alert('审核失败，请重试');
+      }
+    }
+    
+    function showToast(msg) {
+      const toast = document.getElementById('successToast');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+    
+    function logout() {
+      localStorage.removeItem('admin_token');
+      window.location.href = 'm-login.html';
+    }
+
+    // 绑定确认按钮
+    document.getElementById('reportModalConfirm').onclick = confirmProcessReport;
+    document.getElementById('depositModalConfirm').onclick = confirmProcessDeposit;
+  </script>
+</body>
+</html>

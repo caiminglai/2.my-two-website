@@ -1,0 +1,59 @@
+// ============================================================
+// 业务逻辑层 - 举报服务（纯业务规则，无 SQL，无 HTTP）
+// ============================================================
+
+const reportsDb = require('../db/reports');
+const userDb = require('../db/users');
+const { verifyToken } = require('../db/index');
+
+function submitReport(token, reportedId, reportType, description, proofPath) {
+  const userId = verifyToken(token);
+  if (!userId) {
+    return { success: false, message: 'token无效' };
+  }
+  const users = userDb.getUsersByUserId(userId);
+  if (users.length === 0) {
+    return { success: false, message: '请先创建个人资料' };
+  }
+  if (!reportedId || !reportType) {
+    return { success: false, message: '缺少参数' };
+  }
+  reportsDb.addReport(users[0].id, reportedId, reportType, description, proofPath);
+  return { success: true };
+}
+
+function getAllReportsForAdmin(status) {
+  const reports = reportsDb.getAllReports(status);
+  const mappedReports = reports.map(r => ({
+    id: r.id,
+    reporterId: r.reporter_id,
+    reportedId: r.reported_id,
+    reportedName: r.reported_name || r.reportedName || '未知',
+    reportedAvatar: r.reported_avatar || r.reportedAvatar || '',
+    reportType: r.report_type || r.reportType,
+    description: r.description,
+    proof_path: r.proof_path,
+    status: r.status,
+    createdAt: r.created_at,
+    updatedAt: r.updated_at,
+    adminNote: r.admin_note
+  }));
+  return mappedReports;
+}
+
+function updateStatus(reportId, status, adminNote) {
+  reportsDb.updateReportStatus(reportId, status, adminNote);
+  return { success: true };
+}
+
+function removeReport(reportId) {
+  reportsDb.deleteReport(reportId);
+  return { success: true };
+}
+
+module.exports = {
+  submitReport,
+  getAllReportsForAdmin,
+  updateStatus,
+  removeReport
+};

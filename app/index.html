@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
+    <meta name="description" content="精准匹配 - 男女相亲精准匹配平台，线上Excel式筛选，保证金保障真实信息" />
+    <meta name="keywords" content="相亲,匹配,交友,精准匹配,找对象,婚恋" />
+    <meta name="theme-color" content="#E87A5D" />
+    <!-- 微信适配 -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="format-detection" content="telephone=no" />
+    <!-- 微信分享 -->
+    <meta itemprop="name" content="精准匹配 · 缘分从数据开始" />
+    <meta itemprop="description" content="男女相亲精准匹配，填资料 → 自动匹配 → 找到相似的人" />
+    <meta property="og:title" content="精准匹配 · 缘分从数据开始" />
+    <meta property="og:description" content="男女相亲精准匹配，保证金保障真实信息" />
+    <meta property="og:type" content="website" />
+    <title>精准匹配 · 缘分从数据开始</title>
+    <style>
+      :root {
+        --bg: #FAF6F1;
+        --bg2: #FFFDF9;
+        --bg3: #F5EDE3;
+        --border: #E8DED0;
+        --text: #3D2E20;
+        --text2: #8B7B6B;
+        --text3: #B5A698;
+        --accent: #E87A5D;
+        --accent2: #6BAF7D;
+        --danger: #C4515C;
+      }
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .card-row {
+        background: var(--bg2);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        transition: all .2s;
+      }
+      .card-row:hover {
+        border-color: rgba(232,122,93,0.25);
+        box-shadow: 0 2px 12px rgba(61,46,32,0.06);
+      }
+      .scrollbar-hide::-webkit-scrollbar { display: none; }
+      .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,371 @@
+// ============================================================
+// API 路由层 - 用户相关（只做 HTTP 解析 + 调用 Service + 返回 JSON）
+// 职责：解析 URL 参数、请求体、权限检查、响应 JSON
+// 不直接操作数据库，通过 userService 处理业务逻辑
+// ============================================================
+
+const userService = require('../services/user.service');
+const { verifyToken } = require('../db/index');
+
+// 统一的响应工具
+function sendJson(res, statusCode, obj) {
+  res.writeHead(statusCode, {'Content-Type': 'application/json; charset=utf-8'});
+  res.end(JSON.stringify(obj));
+}
+
+// 从路径中提取 ID（如 /api/users/abc123）
+function extractUserId(pathname) {
+  const parts = pathname.split('/').filter(p => p);
+  const idx = parts.indexOf('users');
+  if (idx !== -1 && idx + 1 < parts.length) {
+    return parts[idx + 1];
+  }
+  return null;
+}
+
+// 从请求头获取认证信息
+function getAuthInfo(req, ADMIN_TOKEN) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return { isAdmin: false, userId: null, token: null };
+  }
+  const token = authHeader.slice(7);
+  return {
+    isAdmin: token === ADMIN_TOKEN, userId: verifyToken(token), token };
+}
+
+// ========== GET /api/users（用户列表 + keyword 搜索）
+function getUsers(req, res, ADMIN_TOKEN, parsedUrl) {
+  const page = parseInt(parsedUrl.query.page) || 1;
+  let limit = parseInt(parsedUrl.query.limit) || 200;
+  const keyword = parsedUrl.query.keyword;
+  const exact = parsedUrl.query.exact;
+
+  const authInfo = getAuthInfo(req, ADMIN_TOKEN);
+
+  let result, total;
+
+  if (keyword) {
+    const criteria = { keyword, exact };
+    const searchResult = userService.searchUsers(criteria, page, limit, authInfo.isAdmin);
+    result = searchResult.data;
+    total = searchResult.count;
+  } else {
+    if (authInfo.isAdmin) {
+      limit = 10000;
+    } else if (limit > 1000) {
+      limit = 1000;
+    }
+    result = userService.getUserList(page, limit, authInfo.isAdmin);
+    total = userService.getUserStats().total;
+  }
+
+  sendJson(res, 200, { success: true, data: result, total });
+}
+
+// ========== POST /api/users（创建用户）
+function addUser(req, res, readBodyWithLimit, ADMIN_TOKEN) {
+  return readBodyWithLimit(req).then(body => {
+    try {
+      const data = JSON.parse(body);
+      const authInfo = getAuthInfo(req, ADMIN_TOKEN);
+
+      if (authInfo.isAdmin) {
+        const result = userService.createUser(data, null);
+        if (result.success) {
+          sendJson(res, 200, result);
+        } else {
+          sendJson(res, 400, result);
+        }
+        return;
+      }
+      if (authInfo.userId) {
+        const result = userService.createUser(data, authInfo.userId);
+        if (result.success) {
+          sendJson(res, 200, result);
+        } else {
+          sendJson(res, 400, result);
+        }
+        return;
+      }
+      sendJson(res, 401, { success: false, message: '需要登录' });
+    } catch (e) {
+      sendJson(res, 500, { success: false, message: '添加失败' });
+    }
+  }).catch(e => {
+    sendJson(res, 413, { success: false, message: e.message || '请求体过大' });
+  });
+}
+
+// ========== POST /api/users/batch（批量保存用户）
+function batchSaveUsers(req, res, readBodyWithLimit, checkAdminAuth) {
+  if (!checkAdminAuth(req)) {
+    sendJson(res, 401, { success: false, message: '需要管理员权限' });
+    return;
+  }
+  return readBodyWithLimit(req).then(body => {
+    try {
+      const data = JSON.parse(body);
+      if (!Array.isArray(data)) {
+        sendJson(res, 400, { success: false, message: '数据格式错误' });
+        return;
+      }
+      const result = userService.batchSave(data, true);
+      if (result.success) {
+        sendJson(res, 200, { success: true, count: data.length });
+      } else {
+        sendJson(res, 400, result);
+      }
+    } catch (e) {
+      sendJson(res, 500, { success: false, message: '批量保存失败' });
+    }
+  }).catch(e => {
+    sendJson(res, 413, { success: false, message: e.message || '请求体过大' });
+  });
+}
+
+// ========== GET /api/users/my（获取当前登录用户）
+function getMyUser(req, res, ADMIN_TOKEN) {
+  const authInfo = getAuthInfo(req, ADMIN_TOKEN);
+  if (!authInfo.token) {
+    sendJson(res, 401, { success: false, message: '未登录' });
+    return;
+  }
+  if (!authInfo.userId && !authInfo.isAdmin) {
+    sendJson(res, 401, { success: false, message: 'token无效' });
+    return;
+  }
+  const user = userService.getMyUser(authInfo.userId);
+  sendJson(res, 200, { success: true, user });
+}
+
+// ========== PUT /api/users/my（更新当前用户）
+function updateMyUser(req, res, readBodyWithLimit) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    sendJson(res, 401, { success: false, message: '未登录' });
+    return;
+  }
+  const token = authHeader.slice(7);
+  const userId = verifyToken(token);
+  if (!userId) {
+    sendJson(res, 401, { success: false, message: 'token无效' });
+    return;
+  }
+  return readBodyWithLimit(req).then(body => {
+    try {
+      const data = JSON.parse(body);
+      const result = userService.updateMyUser(userId, data);
+      if (result.success) {
+        sendJson(res, 200, result);
+      } else {
+        sendJson(res, 404, result);
+      }
+    } catch (e) {
+      sendJson(res, 500, { success: false, message: '更新失败' });
+    }
+  }).catch(e => {
+    sendJson(res, 413, { success: false, message: e.message || '请求体过大' });
+  });
+}
+
+// ========== DELETE /api/users/my（删除当前用户）
+function deleteMyUser(req, res) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    sendJson(res, 401, { success: false, message: '未登录' });
+    return;
+  }
+  const token = authHeader.slice(7);
+  const userId = verifyToken(token);
+  if (!userId) {
+    sendJson(res, 401, { success: false, message: 'token无效' });
+    return;
+  }
+  const result = userService.removeMyUser(userId);
+  if (result.success) {
+    sendJson(res, 200, result);
+  } else {
+    sendJson(res, 404, result);
+  }
+}
+
+// ========== PUT /api/users/:id（管理员编辑用户）
+function editUser(req, res, readBodyWithLimit, checkAdminAuth, pathname) {
+  if (!checkAdminAuth(req)) {
+    sendJson(res, 401, { success: false, message: '需要管理员权限' });
+    return;
+  }
+
+  const id = extractUserId(pathname);
+  if (!id || !userService.validateIdFormat(id)) {
+    sendJson(res, 400, { success: false, message: '无效的用户ID' });
+    return;
+  }
+
+  const contentType = req.headers['content-type'] || '';
+
+  // 处理 multipart/form-data（带文件上传）
+  if (contentType.includes('multipart/form-data')) {
+    const boundary = contentType.split('boundary=')[1];
+    if (!boundary) {
+      sendJson(res, 400, { success: false, message: '无效的表单数据' });
+      return;
+    }
+    return readBodyWithLimit(req).then(body => {
+      try {
+        const data = parseMultipart(body, boundary);
+        const fields = {};
+        if (data.fields.name) fields.name = userService.sanitizeString(data.fields.name).substring(0, 50);
+        if (data.fields.gender) fields.gender = userService.sanitizeString(data.fields.gender).substring(0, 10);
+        if (data.fields.age) fields.age = userService.sanitizeString(data.fields.age).substring(0, 10);
+        if (data.fields.city) fields.city = userService.sanitizeString(data.fields.city).substring(0, 50);
+        if (data.fields.contact) fields.contact = userService.sanitizeString(data.fields.contact).substring(0, 100);
+
+        if (data.files.avatar) {
+          const fs = require('fs');
+          const path = require('path');
+          const avatarDir = path.join(__dirname, '..', '..', 'uploads', 'avatars');
+          if (!fs.existsSync(avatarDir)) fs.mkdirSync(avatarDir, { recursive: true });
+          const ext = data.files.avatar.filename.split('.').pop() || 'jpg';
+          const allowedExts = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+          if (!allowedExts.includes(ext.toLowerCase())) {
+            sendJson(res, 400, { success: false, message: '不支持的文件格式' });
+            return;
+          }
+          if (data.files.avatar.data.length > 5 * 1024 * 1024) {
+            sendJson(res, 400, { success: false, message: '文件过大，最大支持5MB' });
+            return;
+          }
+          const avatarName = `${id}.${ext}`;
+          fs.writeFileSync(path.join(avatarDir, avatarName), data.files.avatar.data);
+          fields.avatar = `/uploads/avatars/${avatarName}`;
+        }
+
+        const result = userService.editUserById(id, { data: fields });
+        sendJson(res, 200, result);
+      } catch (e) {
+        sendJson(res, 500, { success: false, message: '编辑失败: ' + e.message });
+      }
+    }).catch(e => {
+      sendJson(res, 413, { success: false, message: e.message || '请求体过大' });
+    });
+  }
+
+  // 处理 JSON
+  return readBodyWithLimit(req).then(body => {
+    try {
+      const data = JSON.parse(body);
+      const result = userService.editUserById(id, data);
+      sendJson(res, 200, result);
+    } catch (e) {
+      sendJson(res, 500, { success: false, message: '编辑失败' });
+    }
+  }).catch(e => {
+    sendJson(res, 413, { success: false, message: e.message || '请求体过大' });
+  });
+}
+
+// ========== DELETE /api/users/:id（删除用户）
+function deleteUser(req, res, ADMIN_TOKEN, pathname) {
+  const authInfo = getAuthInfo(req, ADMIN_TOKEN);
+  const id = pathname.split('/')[3];
+  if (!id || !userService.validateIdFormat(id)) {
+    sendJson(res, 400, { success: false, message: '无效的用户ID' });
+    return;
+  }
+  const result = userService.removeUser(id, authInfo.userId, authInfo.isAdmin);
+  sendJson(res, result.success ? 200 : 403, result);
+}
+
+// ========== GET /api/users/pending（待审核用户列表）
+function getPendingUsers(req, res, checkAdminAuth) {
+  if (!checkAdminAuth(req)) {
+    sendJson(res, 401, { success: false, message: '需要管理员权限' });
+    return;
+  }
+  const users = userService.getPendingUsers();
+  sendJson(res, 200, { success: true, data: users });
+}
+
+// ========== POST /api/users/:id/approve（通过审核）
+function approveUser(req, res, checkAdminAuth, pathname) {
+  if (!checkAdminAuth(req)) {
+    sendJson(res, 401, { success: false, message: '需要管理员权限' });
+    return;
+  }
+  const id = pathname.split('/')[3];
+  if (!id || !userService.validateIdFormat(id)) {
+    sendJson(res, 400, { success: false, message: '无效的用户ID' });
+    return;
+  }
+  const result = userService.approveUser(id);
+  sendJson(res, 200, result);
+}
+
+// ========== POST /api/users/:id/reject（拒绝审核）
+function rejectUser(req, res, checkAdminAuth, pathname) {
+  if (!checkAdminAuth(req)) {
+    sendJson(res, 401, { success: false, message: '需要管理员权限' });
+    return;
+  }
+  const id = pathname.split('/')[3];
+  if (!id || !userService.validateIdFormat(id)) {
+    sendJson(res, 400, { success: false, message: '无效的用户ID' });
+    return;
+  }
+  const result = userService.rejectUser(id);
+  sendJson(res, 200, result);
+}
+
+// ========== GET /api/users/search（搜索用户）
+function searchUsers(req, res, parsedUrl) {
+  const criteria = { ...parsedUrl.query };
+  for (const [key, value] of Object.entries(criteria)) {
+    if (typeof value === 'string') {
+      criteria[key] = userService.sanitizeString(value);
+    }
+  }
+  const page = parseInt(criteria.page) || 1;
+  const limit = Math.min(parseInt(criteria.limit) || 20, 100);
+  const result = userService.searchUsers(criteria, page, limit, false);
+  sendJson(res, 200, { success: true, ...result });
+}
+
+// ========== multipart/form-data 解析工具（内部用）
+function parseMultipart(body, boundary) {
+  const result = { fields: {}, files: {} };
+  const boundaryBuffer = Buffer.from('--' + boundary);
+  const bodyBuffer = Buffer.isBuffer(body) ? body : Buffer.from(body);
+  const parts = [];
+  let start = 0;
+  while (true) {
+    const idx = bodyBuffer.indexOf(boundaryBuffer, start);
+    if (idx === -1) break;
+    if (start > 0) parts.push(bodyBuffer.slice(start, idx));
+    start = idx + boundaryBuffer.length;
+  }
+  for (const part of parts) {
+    const headerEnd = part.indexOf('\r\n\r\n');
+    if (headerEnd === -1) continue;
+    const header = part.slice(0, headerEnd).toString();
+    const content = part.slice(headerEnd + 4);
+    const data = content.slice(0, content.length - 2);
+    const nameMatch = header.match(/name="([^"]+)"/);
+    const filenameMatch = header.match(/filename="([^"]+)"/);
+    if (nameMatch) {
+      const name = nameMatch[1];
+      if (filenameMatch) {
+        result.files[name] = { filename: filenameMatch[1], data };
+      } else {
+        result.fields[name] = data.toString();
+      }
+    }
+  }
+  return result;
+}
+
+module.exports = {
+  getUsers, addUser, batchSaveUsers, getMyUser, updateMyUser, deleteMyUser,
+  editUser, deleteUser, getPendingUsers, approveUser, rejectUser, searchUsers
+};

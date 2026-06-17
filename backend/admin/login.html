@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>管理后台 - 精准匹配</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:Arial,"Microsoft YaHei",sans-serif;background:linear-gradient(135deg, #FFF0F5 0%, #FFE4E9 50%, #FFD6E0 100%);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.login-box{background:#fff;border-radius:25px;padding:45px;width:340px;box-shadow:0 10px 40px rgba(255,150,180,0.25);border:2px solid #FFB6C1}
+.login-box h1{font-size:22px;color:#FF69B4;text-align:center;margin-bottom:5px;text-shadow:1px 1px 2px rgba(255,105,180,0.3)}
+.login-box p{color:#FF85B3;font-size:14px;text-align:center;margin-bottom:28px}
+.login-box .input-group{margin-bottom:22px}
+.login-box .input-group label{display:block;color:#FF69B4;font-size:14px;margin-bottom:8px;font-weight:500}
+.login-box .input-group input{width:100%;padding:14px 16px;border:2px solid #FFB6C1;border-radius:15px;font-size:14px;color:#333;background:#FFF5F8}
+.login-box .input-group input:focus{outline:none;border-color:#FF69B4;background:#fff}
+.login-box .btn{width:100%;padding:14px;border:none;border-radius:15px;background:linear-gradient(135deg, #FF69B4 0%, #FF85B3 100%);color:#fff;font-size:15px;font-weight:500;cursor:pointer;box-shadow:0 4px 15px rgba(255,105,180,0.4)}
+.login-box .btn:hover{transform:scale(1.02);box-shadow:0 6px 20px rgba(255,105,180,0.5)}
+.login-box .err{color:#FF6B8A;text-align:center;margin-top:14px;font-size:13px}
+.decor{position:absolute;top:20px;left:20px;width:60px;height:60px;border-radius:50%;background:rgba(255,182,193,0.3);animation:float 3s ease-in-out infinite}
+.decor2{position:absolute;bottom:30px;right:30px;width:40px;height:40px;border-radius:50%;background:rgba(255,133,179,0.4);animation:float 4s ease-in-out infinite reverse}
+@keyframes float{0%,100%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(-10px) rotate(5deg)}}
+
+@media screen and (max-width: 480px) {
+  body { padding: 10px; }
+  .login-box {
+    width: 100%;
+    padding: 30px 20px;
+    margin: 10px;
+  }
+  .login-box h1 { font-size: 18px; }
+  .login-box p { font-size: 12px; }
+  .login-box .input-group input { padding: 12px 14px; }
+  .login-box .btn { padding: 12px; font-size: 14px; }
+  .decor, .decor2 { display: none; }
+}
+</style>
+</head>
+<body>
+<div class="decor"></div>
+<div class="decor2"></div>
+<div class="login-box">
+  <h1>✧ 精准匹配 ✧</h1>
+  <p>๑ 管理后台登录 ๑</p>
+  <div class="input-group">
+    <label>管理密码 ♡</label>
+    <input type="password" id="pwd" placeholder="请输入密码">
+  </div>
+  <button class="btn" id="loginBtn">登录 ⋆</button>
+  <p class="err" id="err"></p>
+</div>
+<script>
+document.getElementById('loginBtn').onclick=function(){
+  var pwd=document.getElementById('pwd').value;
+  var err=document.getElementById('err');
+  if(!pwd){err.textContent='请输入密码~';return;}
+  err.textContent='';
+  var xhr=new XMLHttpRequest();
+  xhr.open('POST','/jzxr/api/admin/login',true);
+  xhr.setRequestHeader('Content-Type','application/json');
+  xhr.onreadystatechange=function(){
+    if(xhr.readyState===4){
+      if(xhr.status===200){
+        var d=JSON.parse(xhr.responseText);
+        if(d.success && d.token){
+          localStorage.setItem('admin_token',d.token);
+          document.cookie='admin_token='+d.token+';path=/;max-age=86400;SameSite=Lax';
+          window.location.href='/jzxr/admin/main';
+        }else{err.textContent='密码错误呀~';}
+      }else{err.textContent='登录失败呢~';}
+    }
+  };
+  xhr.send(JSON.stringify({password:pwd}));
+};
+document.getElementById('pwd').onkeypress=function(e){if(e.key==='Enter')document.getElementById('loginBtn').click();};
+</script>
+</body>
+</html>
