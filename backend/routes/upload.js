@@ -1,6 +1,7 @@
 const dbIndex = require('../db/index.js');
 const userDb = require('../db/users.js');
 const paymentsDb = require('../db/payments.js');
+const adminService = require('../services/admin.service');
 const fs = require('fs');
 const path = require('path');
 
@@ -26,14 +27,15 @@ function sendJson(res, statusCode, obj) {
   res.end(JSON.stringify(obj));
 }
 
-function uploadAvatar(req, res, ADMIN_TOKEN) {
+function uploadAvatar(req, res) {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     sendJson(res, 401, { success: false, message: '未登录' }); return;
   }
   const token = authHeader.slice(7);
-  const userId = token === ADMIN_TOKEN ? null : dbIndex.verifyToken(token);
-  if (!userId && token !== ADMIN_TOKEN) {
+  const isAdmin = adminService.isAdminToken(token);
+  const userId = isAdmin ? null : dbIndex.verifyToken(token);
+  if (!userId && !isAdmin) {
     sendJson(res, 401, { success: false, message: 'token无效' }); return;
   }
 

@@ -4,6 +4,9 @@
 
 const authService = require('../services/auth.service');
 const adminService = require('../services/admin.service');
+const captchaService = require('../services/captcha.service');
+const smsService = require('../services/sms.service');
+const { generateAdminToken } = require('../db/index');
 
 function sendJson(res, statusCode, obj) {
   res.writeHead(statusCode, {'Content-Type': 'application/json; charset=utf-8'});
@@ -11,10 +14,18 @@ function sendJson(res, statusCode, obj) {
 }
 
 // ========== POST /api/auth/register
-function register(req, res, readBodyWithLimit) {
+function register(req, res, readBodyWithLimit, checkRegisterRateLimit, clientIp) {
+  if (!checkRegisterRateLimit(clientIp)) {
+    sendJson(res, 429, { success: false, message: '注册过于频繁，请稍后再试' });
+    return;
+  }
   return readBodyWithLimit(req).then(body => {
     try {
       const data = JSON.parse(body);
+      if (!captchaService.checkCaptchaToken(data.captchaId, data.captchaToken)) {
+        sendJson(res, 400, { success: false, message: '滑动验证无效或已过期，请重新验证' });
+        return;
+      }
       const result = authService.register(data.phone, data.password, data.nickname);
       sendJson(res, result.success ? 200 : 400, result);
     } catch (e) {
@@ -71,8 +82,38 @@ function changePassword(req, res, readBodyWithLimit) {
   });
 }
 
+// ========== POST /api/auth/sms/register-code（预留：发送注册短信验证码）
+function sendRegisterSmsCode(req, res, readBodyWithLimit) {
+  return readBodyWithLimit(req).then(body => {
+    try {
+      const data = JSON.parse(body);
+      const result = smsService.sendRegisterCode(data.phone);
+      sendJson(res, result.success ? 200 : 400, result);
+    } catch (e) {
+      sendJson(res, 500, { success: false, message: '发送验证码失败' });
+    }
+  }).catch(e => {
+    sendJson(res, 413, { success: false, message: e.message || '请求体过大' });
+  });
+}
+
+// ========== POST /api/auth/sms/verify-register-code（预留：校验注册短信验证码）
+function verifyRegisterSmsCode(req, res, readBodyWithLimit) {
+  return readBodyWithLimit(req).then(body => {
+    try {
+      const data = JSON.parse(body);
+      const result = smsService.verifyRegisterCode(data.phone, data.code);
+      sendJson(res, result.success ? 200 : 400, result);
+    } catch (e) {
+      sendJson(res, 500, { success: false, message: '校验验证码失败' });
+    }
+  }).catch(e => {
+    sendJson(res, 413, { success: false, message: e.message || '请求体过大' });
+  });
+}
+
 // ========== POST /api/admin/login
-function adminLogin(req, res, readBodyWithLimit, ADMIN_TOKEN, checkLoginRateLimit) {
+function adminLogin(req, res, readBodyWithLimit, checkLoginRateLimit) {
   const clientIp = req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || req.socket.remoteAddress || 'unknown';
   if (!checkLoginRateLimit(clientIp)) {
     sendJson(res, 429, { success: false, message: '登录尝试过多，请5分钟后再试' });
@@ -81,17 +122,22 @@ function adminLogin(req, res, readBodyWithLimit, ADMIN_TOKEN, checkLoginRateLimi
   return readBodyWithLimit(req).then(body => {
     try {
       const data = JSON.parse(body);
-      if (adminService.verifyAdminPassword(data.password)) {
-        sendJson(res, 200, { success: true, token: ADMIN_TOKEN });
+      // 兼容旧版仅传 password 的调用：未传 username 时使用默认管理员账号
+      const username = data.username || process.env.ADMIN_USERNAME || 'admin';
+      const password = data.password;
+      const result = adminService.verifyAdminAccount(username, password);
+      if (result.success) {
+        const token = generateAdminToken(result.username);
+        sendJson(res, 200, { success: true, token, username: result.username });
       } else {
-        sendJson(res, 401, { success: false });
+        sendJson(res, 401, { success: false, message: result.message || '管理员账号或密码错误' });
       }
     } catch (e) {
-      sendJson(res, 400, { success: false });
+      sendJson(res, 400, { success: false, message: '登录失败' });
     }
   }).catch(e => {
     sendJson(res, 413, { success: false, message: e.message || '请求体过大' });
   });
 }
 
-module.exports = { register, login, changePassword, adminLogin };
+module.exports = { register, login, changePassword, adminLogin, sendRegisterSmsCode, verifyRegisterSmsCode };

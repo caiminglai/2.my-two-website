@@ -5,6 +5,7 @@
 // ============================================================
 
 const userService = require('../services/user.service');
+const adminService = require('../services/admin.service');
 const { verifyToken } = require('../db/index');
 
 // 统一的响应工具
@@ -24,24 +25,25 @@ function extractUserId(pathname) {
 }
 
 // 从请求头获取认证信息
-function getAuthInfo(req, ADMIN_TOKEN) {
+function getAuthInfo(req) {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return { isAdmin: false, userId: null, token: null };
   }
   const token = authHeader.slice(7);
+  const isAdmin = adminService.isAdminToken(token);
   return {
-    isAdmin: token === ADMIN_TOKEN, userId: verifyToken(token), token };
+    isAdmin, userId: isAdmin ? null : verifyToken(token), token };
 }
 
 // ========== GET /api/users（用户列表 + keyword 搜索）
-function getUsers(req, res, ADMIN_TOKEN, parsedUrl) {
+function getUsers(req, res, _, parsedUrl) {
   const page = parseInt(parsedUrl.query.page) || 1;
   let limit = parseInt(parsedUrl.query.limit) || 200;
   const keyword = parsedUrl.query.keyword;
   const exact = parsedUrl.query.exact;
 
-  const authInfo = getAuthInfo(req, ADMIN_TOKEN);
+  const authInfo = getAuthInfo(req);
 
   let result, total;
 
@@ -64,11 +66,11 @@ function getUsers(req, res, ADMIN_TOKEN, parsedUrl) {
 }
 
 // ========== POST /api/users（创建用户）
-function addUser(req, res, readBodyWithLimit, ADMIN_TOKEN) {
+function addUser(req, res, readBodyWithLimit) {
   return readBodyWithLimit(req).then(body => {
     try {
       const data = JSON.parse(body);
-      const authInfo = getAuthInfo(req, ADMIN_TOKEN);
+      const authInfo = getAuthInfo(req);
 
       if (authInfo.isAdmin) {
         const result = userService.createUser(data, null);
@@ -125,8 +127,8 @@ function batchSaveUsers(req, res, readBodyWithLimit, checkAdminAuth) {
 }
 
 // ========== GET /api/users/my（获取当前登录用户）
-function getMyUser(req, res, ADMIN_TOKEN) {
-  const authInfo = getAuthInfo(req, ADMIN_TOKEN);
+function getMyUser(req, res) {
+  const authInfo = getAuthInfo(req);
   if (!authInfo.token) {
     sendJson(res, 401, { success: false, message: '未登录' });
     return;
@@ -267,8 +269,8 @@ function editUser(req, res, readBodyWithLimit, checkAdminAuth, pathname) {
 }
 
 // ========== DELETE /api/users/:id（删除用户）
-function deleteUser(req, res, ADMIN_TOKEN, pathname) {
-  const authInfo = getAuthInfo(req, ADMIN_TOKEN);
+function deleteUser(req, res, _, pathname) {
+  const authInfo = getAuthInfo(req);
   const id = pathname.split('/')[3];
   if (!id || !userService.validateIdFormat(id)) {
     sendJson(res, 400, { success: false, message: '无效的用户ID' });

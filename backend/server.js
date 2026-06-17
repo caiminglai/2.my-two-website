@@ -21,8 +21,9 @@ if (fs.existsSync(envFile)) {
   });
 }
 
-// ========== 统一管理员密码（从 ADMIN_PASSWORD 读取，兼容 .env） ==========
+// ========== 管理员安全配置（兼容 .env） ==========
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'your_admin_password';
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
 
 // ========== 从独立文件加载管理后台HTML ==========
 const ADMIN_HTML = fs.readFileSync(path.join(__dirname, 'admin', 'login.html'), 'utf8');
@@ -31,11 +32,22 @@ const M_LOGIN_HTML = fs.readFileSync(path.join(__dirname, 'admin', 'm-login.html
 const M_HTML = fs.readFileSync(path.join(__dirname, 'admin', 'm.html'), 'utf8');
 
 // ========== 管理员认证 ==========
-function checkAdminAuth(req) {
+function getAdminTokenFromRequest(req) {
   const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) return false;
-  const token = authHeader.slice(7);
-  return token === ADMIN_PASSWORD;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    return authHeader.slice(7);
+  }
+  const cookies = {};
+  (req.headers.cookie || '').split(';').forEach(c => {
+    const [k, ...v] = c.trim().split('=');
+    if (k) cookies[k] = v.join('=');
+  });
+  return cookies.admin_token || null;
+}
+
+function checkAdminAuth(req) {
+  const token = getAdminTokenFromRequest(req);
+  return adminService.isAdminToken(token);
 }
 
 // ========== CORS 配置 ==========
@@ -61,6 +73,7 @@ paymentRoutes.initConfig(process.env);
 // ========== 速率限制 ==========
 const rateLimitMap = new Map();
 const loginLimitMap = new Map();
+const registerLimitMap = new Map();
 
 function checkLimitMap(map, ip, limit, windowMs) {
   const now = Date.now();
@@ -85,6 +98,7 @@ function cleanupLimitMap(map, windowMs) {
 setInterval(() => {
   cleanupLimitMap(rateLimitMap, 60000);
   cleanupLimitMap(loginLimitMap, 300000);
+  cleanupLimitMap(registerLimitMap, 3600000);
 }, 5 * 60 * 1000);
 
 function checkRateLimit(ip, limit = 60, windowMs = 60000) {
@@ -93,6 +107,10 @@ function checkRateLimit(ip, limit = 60, windowMs = 60000) {
 
 function checkLoginRateLimit(ip, limit = 100, windowMs = 300000) {
   return checkLimitMap(loginLimitMap, ip, limit, windowMs);
+}
+
+function checkRegisterRateLimit(ip, limit = 5, windowMs = 3600000) {
+  return checkLimitMap(registerLimitMap, ip, limit, windowMs);
 }
 
 // ========== 请求体读取 ==========
@@ -179,23 +197,13 @@ const server = http.createServer((req, res) => {
     res.writeHead(200, {'Content-Type': 'text/html; charset=utf-8'}); res.end(ADMIN_HTML); return;
   }
   if (req.method === 'GET' && (pathname === '/admin/m' || pathname === '/admin/m/')) {
-    const cookies = {};
-    (req.headers.cookie || '').split(';').forEach(c => {
-      const [k, ...v] = c.trim().split('=');
-      if (k) cookies[k] = v.join('=');
-    });
-    if (!cookies.admin_token || cookies.admin_token !== ADMIN_PASSWORD) {
+    if (!checkAdminAuth(req)) {
       res.writeHead(200, {'Content-Type': 'text/html; charset=utf-8'}); res.end(M_LOGIN_HTML); return;
     }
     res.writeHead(200, {'Content-Type': 'text/html; charset=utf-8'}); res.end(M_HTML); return;
   }
   if (req.method === 'GET' && (pathname === '/admin/main' || pathname === '/admin/main/')) {
-    const cookies = {};
-    (req.headers.cookie || '').split(';').forEach(c => {
-      const [k, ...v] = c.trim().split('=');
-      if (k) cookies[k] = v.join('=');
-    });
-    if (!cookies.admin_token || cookies.admin_token !== ADMIN_PASSWORD) {
+    if (!checkAdminAuth(req)) {
       res.writeHead(302, {'Location': '/jzxr/admin/'}); res.end(); return;
     }
     res.writeHead(200, {'Content-Type': 'text/html; charset=utf-8'}); res.end(MAIN_HTML); return;
@@ -225,10 +233,10 @@ const server = http.createServer((req, res) => {
 
   // --- 上传 ---
   if (req.method === 'POST' && pathname === '/api/upload/avatar') {
-    uploadRoutes.uploadAvatar(req, res, ADMIN_PASSWORD); return;
+    uploadRoutes.uploadAvatar(req, res); return;
   }
   if (req.method === 'POST' && pathname === '/api/deposit/upload-proof') {
-    uploadRoutes.uploadDepositProof(req, res, ADMIN_PASSWORD); return;
+    uploadRoutes.uploadDepositProof(req, res); return;
   }
   if (req.method === 'GET' && pathname === '/api/admin/deposits') {
     uploadRoutes.getDeposits(req, res, checkAdminAuth); return;
@@ -391,8 +399,9 @@ const server = http.createServer((req, res) => {
   }
 
   // --- 认证 ---
+  const clientIp = req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || req.socket.remoteAddress || 'unknown';
   if (req.method === 'POST' && pathname === '/api/auth/register') {
-    authRoutes.register(req, res, readBodyWithLimit, ADMIN_PASSWORD, checkLoginRateLimit); return;
+    authRoutes.register(req, res, readBodyWithLimit, checkRegisterRateLimit, clientIp); return;
   }
   if (req.method === 'POST' && pathname === '/api/auth/login') {
     authRoutes.login(req, res, readBodyWithLimit, checkLoginRateLimit); return;
@@ -400,8 +409,15 @@ const server = http.createServer((req, res) => {
   if (req.method === 'POST' && pathname === '/api/auth/change-password') {
     authRoutes.changePassword(req, res, readBodyWithLimit); return;
   }
+  // 短信验证预留接口
+  if (req.method === 'POST' && pathname === '/api/auth/sms/register-code') {
+    authRoutes.sendRegisterSmsCode(req, res, readBodyWithLimit); return;
+  }
+  if (req.method === 'POST' && pathname === '/api/auth/sms/verify-register-code') {
+    authRoutes.verifyRegisterSmsCode(req, res, readBodyWithLimit); return;
+  }
   if (req.method === 'POST' && (pathname === '/api/admin/login' || pathname === '/api/admin')) {
-    authRoutes.adminLogin(req, res, readBodyWithLimit, ADMIN_PASSWORD, checkLoginRateLimit); return;
+    authRoutes.adminLogin(req, res, readBodyWithLimit, checkLoginRateLimit); return;
   }
 
   // --- 管理员统计 ---
@@ -417,22 +433,22 @@ const server = http.createServer((req, res) => {
 
   // --- 用户路由 ---
   if (req.method === 'GET' && pathname === '/api/users') {
-    userRoutes.getUsers(req, res, ADMIN_PASSWORD, parsedUrl); return;
+    userRoutes.getUsers(req, res, null, parsedUrl); return;
   }
   if (req.method === 'POST' && pathname === '/api/users') {
-    userRoutes.addUser(req, res, readBodyWithLimit, ADMIN_PASSWORD); return;
+    userRoutes.addUser(req, res, readBodyWithLimit); return;
   }
   if (req.method === 'POST' && pathname === '/api/users/batch') {
     userRoutes.batchSaveUsers(req, res, readBodyWithLimit, checkAdminAuth); return;
   }
   if (req.method === 'GET' && pathname === '/api/users/my') {
-    userRoutes.getMyUser(req, res, ADMIN_PASSWORD); return;
+    userRoutes.getMyUser(req, res); return;
   }
   if (req.method === 'PUT' && pathname === '/api/users/my') {
     userRoutes.updateMyUser(req, res, readBodyWithLimit); return;
   }
   if (req.method === 'DELETE' && pathname === '/api/users/my') {
-    userRoutes.deleteMyUser(req, res, ADMIN_PASSWORD); return;
+    userRoutes.deleteMyUser(req, res); return;
   }
   if (req.method === 'GET' && pathname === '/api/users/pending') {
     userRoutes.getPendingUsers(req, res, checkAdminAuth); return;
@@ -445,7 +461,7 @@ const server = http.createServer((req, res) => {
     userRoutes.editUser(req, res, readBodyWithLimit, checkAdminAuth, pathname); return;
   }
   if (req.method === 'DELETE' && /^\/api\/users\/[^\/]+$/.test(pathname)) {
-    userRoutes.deleteUser(req, res, ADMIN_PASSWORD, pathname); return;
+    userRoutes.deleteUser(req, res, null, pathname); return;
   }
   if (req.method === 'POST' && /^\/api\/users\/[^\/]+\/approve$/.test(pathname)) {
     userRoutes.approveUser(req, res, checkAdminAuth, pathname); return;

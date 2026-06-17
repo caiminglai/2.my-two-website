@@ -36,6 +36,11 @@
     </div>
     
     <div class="input-group">
+      <label>管理员账号</label>
+      <input type="text" id="username" placeholder="请输入管理员账号">
+    </div>
+    
+    <div class="input-group">
       <label>管理员密码</label>
       <input type="password" id="password" placeholder="请输入密码">
     </div>
@@ -52,9 +57,15 @@
     const API_BASE = window.location.pathname.includes('/jzxr') ? '/jzxr' : '';
     
     async function login() {
-      const password = document.getElementById('password').value.trim();
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
       const errorMsg = document.getElementById('errorMsg');
       
+      if (!username) {
+        errorMsg.textContent = '请输入管理员账号';
+        errorMsg.classList.add('show');
+        return;
+      }
       if (!password) {
         errorMsg.textContent = '请输入密码';
         errorMsg.classList.add('show');
@@ -67,12 +78,13 @@
         const response = await fetch(API_BASE + '/api/admin', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ password })
+          body: JSON.stringify({ username, password })
         });
         const data = await response.json();
         
         if (data.success && data.token) {
           localStorage.setItem('admin_token', data.token);
+          document.cookie = 'admin_token=' + data.token + ';path=/;max-age=86400;SameSite=Lax';
           window.location.href = 'm.html';
         } else {
           errorMsg.textContent = data.message || '密码错误';

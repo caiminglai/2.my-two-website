@@ -348,10 +348,10 @@ function decrypt(encryptedText) {
   }
 }
 
-function generateToken(userId) {
+function generateToken(userId, role = 'user') {
   const timestamp = Date.now();
   const random = Math.random().toString(36).substring(2);
-  const payload = `${userId}:${timestamp}:${random}`;
+  const payload = `${userId}:${timestamp}:${random}:${role}`;
   const signature = crypto.createHmac('sha256', TOKEN_SECRET).update(payload).digest('hex').slice(0, 16);
   const data = `${payload}:${signature}`;
   return Buffer.from(data).toString('base64');
@@ -361,6 +361,7 @@ function verifyToken(token) {
   try {
     const decoded = Buffer.from(token, 'base64').toString('utf8');
     const parts = decoded.split(':');
+    // 兼容旧版 4 段 token（无 role）和新版 5 段 token
     if (parts.length < 4) return null;
     const signature = parts.pop();
     const payload = parts.join(':');
@@ -369,6 +370,28 @@ function verifyToken(token) {
     const [userId, timestamp] = payload.split(':');
     if (Date.now() - parseInt(timestamp) > 7 * 24 * 60 * 60 * 1000) return null;
     return userId;
+  } catch {
+    return null;
+  }
+}
+
+function generateAdminToken(username) {
+  return generateToken(username, 'admin');
+}
+
+function verifyAdminToken(token) {
+  try {
+    const decoded = Buffer.from(token, 'base64').toString('utf8');
+    const parts = decoded.split(':');
+    if (parts.length < 5) return null;
+    const signature = parts.pop();
+    const payload = parts.join(':');
+    const expectedSig = crypto.createHmac('sha256', TOKEN_SECRET).update(payload).digest('hex').slice(0, 16);
+    if (signature !== expectedSig) return null;
+    const [username, timestamp, , role] = payload.split(':');
+    if (role !== 'admin') return null;
+    if (Date.now() - parseInt(timestamp) > 24 * 60 * 60 * 1000) return null;
+    return username;
   } catch {
     return null;
   }
@@ -416,6 +439,8 @@ module.exports = {
   decrypt,
   generateToken,
   verifyToken,
+  generateAdminToken,
+  verifyAdminToken,
   backupDatabase,
   getBackupList,
   restoreFromBackup,

@@ -43,6 +43,10 @@ body{font-family:Arial,"Microsoft YaHei",sans-serif;background:linear-gradient(1
   <h1>✧ 精准匹配 ✧</h1>
   <p>๑ 管理后台登录 ๑</p>
   <div class="input-group">
+    <label>管理员账号 ♡</label>
+    <input type="text" id="username" placeholder="请输入管理员账号">
+  </div>
+  <div class="input-group">
     <label>管理密码 ♡</label>
     <input type="password" id="pwd" placeholder="请输入密码">
   </div>
@@ -51,8 +55,10 @@ body{font-family:Arial,"Microsoft YaHei",sans-serif;background:linear-gradient(1
 </div>
 <script>
 document.getElementById('loginBtn').onclick=function(){
+  var username=document.getElementById('username').value.trim();
   var pwd=document.getElementById('pwd').value;
   var err=document.getElementById('err');
+  if(!username){err.textContent='请输入管理员账号~';return;}
   if(!pwd){err.textContent='请输入密码~';return;}
   err.textContent='';
   var xhr=new XMLHttpRequest();
@@ -66,11 +72,13 @@ document.getElementById('loginBtn').onclick=function(){
           localStorage.setItem('admin_token',d.token);
           document.cookie='admin_token='+d.token+';path=/;max-age=86400;SameSite=Lax';
           window.location.href='/jzxr/admin/main/';
-        }else{err.textContent='密码错误呀~';}
-      }else{err.textContent='登录失败呢~';}
+        }else{err.textContent=d.message||'密码错误呀~';}
+      }else{
+        try{var d=JSON.parse(xhr.responseText);err.textContent=d.message||'登录失败呢~';}catch(e){err.textContent='登录失败呢~';}
+      }
     }
   };
-  xhr.send(JSON.stringify({password:pwd}));
+  xhr.send(JSON.stringify({username:username,password:pwd}));
 };
 document.getElementById('pwd').onkeypress=function(e){if(e.key==='Enter')document.getElementById('loginBtn').click();};
 </script>

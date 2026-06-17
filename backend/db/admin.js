@@ -40,6 +40,48 @@ function logAdminAction(action, targetId, details) {
   stmt.run(action, targetId || null, details ? JSON.stringify(details) : null, Date.now());
 }
 
+// ========== 管理员账号白名单 ==========
+
+function getAdminWhitelist() {
+  const envWhitelist = process.env.ADMIN_WHITELIST || process.env.ADMIN_USERNAME || '';
+  if (envWhitelist) {
+    return envWhitelist.split(',').map(s => s.trim()).filter(Boolean);
+  }
+  const database = getDb();
+  const stmt = database.prepare('SELECT value FROM admin_settings WHERE key = ?');
+  const row = stmt.get('admin_whitelist');
+  if (row && row.value) {
+    return row.value.split(',').map(s => s.trim()).filter(Boolean);
+  }
+  return [];
+}
+
+function setAdminWhitelist(usernames) {
+  const database = getDb();
+  const value = Array.isArray(usernames) ? usernames.join(',') : String(usernames);
+  const stmt = database.prepare(
+    'INSERT INTO admin_settings (key, value, updated_at) VALUES (?, ?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at'
+  );
+  stmt.run('admin_whitelist', value, Date.now());
+  return true;
+}
+
+function getAdminAccountPassword(username) {
+  const database = getDb();
+  const stmt = database.prepare('SELECT value FROM admin_settings WHERE key = ?');
+  const row = stmt.get('admin_password_' + username);
+  return row ? row.value : null;
+}
+
+function setAdminAccountPassword(username, password) {
+  const database = getDb();
+  const stmt = database.prepare(
+    'INSERT INTO admin_settings (key, value, updated_at) VALUES (?, ?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at'
+  );
+  stmt.run('admin_password_' + username, password, Date.now());
+  return true;
+}
+
 // ========== 自定义筛选字段 ==========
 
 function getAllCustomFilters() {
@@ -81,6 +123,10 @@ module.exports = {
   addAdminLog,
   getAdminLogs,
   logAdminAction,
+  getAdminWhitelist,
+  setAdminWhitelist,
+  getAdminAccountPassword,
+  setAdminAccountPassword,
   getAllCustomFilters,
   addCustomFilter,
   deleteCustomFilter,
