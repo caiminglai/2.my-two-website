@@ -1,7 +1,13 @@
 import { Link, useNavigate } from 'react-router';
 import { ArrowLeft, Shield, AlertTriangle, CheckCircle, Clock, Ban, Wallet, FileCheck, RefreshCw, HelpCircle, Users, AlertOctagon, QrCode, Upload, Zap } from 'lucide-react';
 import { DEPOSIT_RULES } from '../data/constants';
+import { API_BASE_URL } from '../api/config';
 import { useState, useEffect } from 'react';
+
+const getBasePath = () => {
+  if (typeof window !== 'undefined' && window.location.pathname.startsWith('/jzxr')) return '/jzxr';
+  return '';
+};
 
 export default function DepositPage() {
   const navigate = useNavigate();
@@ -35,7 +41,7 @@ export default function DepositPage() {
       const token = localStorage.getItem('auth_token');
       if (!token) return;
 
-      const res = await fetch(`/jzxr/api/payment/status?orderId=${orderId}`, {
+      const res = await fetch(`${API_BASE_URL}/payment/status?orderId=${orderId}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -63,7 +69,7 @@ export default function DepositPage() {
         return;
       }
 
-      const res = await fetch('/jzxr/api/users/my-deposit', {
+      const res = await fetch(`${API_BASE_URL}/users/my-deposit`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -115,7 +121,7 @@ export default function DepositPage() {
       formData.append('amount', String(DEPOSIT_RULES.amount));
 
       const token = localStorage.getItem('auth_token');
-      const res = await fetch('/jzxr/api/deposit/upload-proof', {
+      const res = await fetch(`${API_BASE_URL}/deposit/upload-proof`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -149,7 +155,7 @@ export default function DepositPage() {
     setCreatingOrder(true);
     try {
       const token = localStorage.getItem('auth_token');
-      const res = await fetch('/jzxr/api/payment/create', {
+      const res = await fetch(`${API_BASE_URL}/payment/create`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -542,7 +548,7 @@ export default function DepositPage() {
                   <div className="bg-white rounded-xl p-4 mb-4 border-2 border-dashed" style={{ borderColor: '#F0E4D4' }}>
                     <div className="aspect-square w-full max-w-[280px] mx-auto bg-gray-100 rounded-lg flex items-center justify-center mb-3">
                       <img 
-                        src={`/jzxr/${selectedMethod}-qr.png`} 
+                        src={`${getBasePath()}/${selectedMethod}-qr.png`} 
                         alt={`${selectedMethod === 'alipay' ? '支付宝' : '微信'}收款码`}
                         className="w-full h-full object-contain"
                         onError={(e) => {

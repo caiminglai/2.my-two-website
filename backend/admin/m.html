@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>管理后台</title>
+  <title>精准匹配 - 管理后台</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif; background: linear-gradient(180deg, #FFF0F5 0%, #FFE4E9 30%, #FFD6E0 100%); color: #333; min-height: 100vh; }
@@ -133,7 +133,7 @@
 </head>
 <body>
   <div class="header">
-    <h1>管理后台</h1>
+    <h1>精准匹配 · 管理后台</h1>
     <p>用户管理 · 举报审核 · 保证金审核</p>
   </div>
   
@@ -318,7 +318,7 @@
     const pageSize = 20;
     
     if (!token) {
-      window.location.href = 'm-login.html';
+      window.location.href = API_BASE + '/admin/m-login';
     }
     
     // 解析头像路径为完整 URL
@@ -326,12 +326,9 @@
       if (!avatar) return '';
       if (typeof avatar !== 'string') return '';
       if (avatar.startsWith('http')) return avatar;
-      let p = avatar.replace(/^\/+/, '');
-      if (p.startsWith('jzxr/')) return '/' + p;
-      if (p.startsWith('avatars/') || p.startsWith('uploads/')) {
-        return (API_BASE || '/jzxr') + '/' + p;
-      }
-      return (API_BASE || '/jzxr') + '/avatars/' + p;
+      if (avatar.startsWith('data:')) return avatar;
+      if (avatar.startsWith('/')) return API_BASE + avatar;
+      return API_BASE + '/avatars/' + avatar;
     }
 
     // 解析凭证/图片路径为完整 URL
@@ -339,12 +336,9 @@
       if (!path) return '';
       if (typeof path !== 'string') return '';
       if (path.startsWith('http')) return path;
-      let p = path.replace(/^\/+/, '');
-      if (p.startsWith('jzxr/')) return '/' + p;
-      if (p.startsWith('uploads/') || p.startsWith('avatars/')) {
-        return (API_BASE || '/jzxr') + '/' + p;
-      }
-      return (API_BASE || '/jzxr') + '/uploads/' + p;
+      if (path.startsWith('data:')) return path;
+      if (path.startsWith('/')) return API_BASE + path;
+      return API_BASE + '/uploads/' + path;
     }
 
     // 根据用户信息生成头像 HTML（小头像，用于举报/解锁记录）
@@ -1012,10 +1006,11 @@
       const adminNote = document.getElementById('depositModalNote').value.trim();
       
       try {
-        const response = await fetch(API_BASE + '/api/admin/deposits/' + status, {
+        var action = (status === 'approved') ? 'approve' : 'reject';
+        const response = await fetch(API_BASE + '/api/admin/deposits/' + currentDepositId + '/' + action, {
           method: 'PUT',
           headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ids: [currentDepositId], admin_note: adminNote })
+          body: JSON.stringify({ admin_note: adminNote })
         });
         const data = await response.json();
         
@@ -1040,7 +1035,7 @@
     
     function logout() {
       localStorage.removeItem('admin_token');
-      window.location.href = 'm-login.html';
+      window.location.href = API_BASE + '/admin/m-login';
     }
 
     // 绑定确认按钮

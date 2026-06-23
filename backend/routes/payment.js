@@ -182,7 +182,7 @@ function createMockOrder(userId, amount, channel) {
   return {
     success: true,
     orderId: orderId,
-    payUrl: '/jzxr/api/payment/mock-pay?orderId=' + encodeURIComponent(orderId)
+    payUrl: '/api/payment/mock-pay?orderId=' + encodeURIComponent(orderId)
   };
 }
 

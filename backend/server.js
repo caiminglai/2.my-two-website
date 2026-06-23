@@ -5,25 +5,21 @@ const path = require('path');
 const dbIndex = require('./db/index.js');
 const paymentsDb = require('./db/payments.js');
 const userDb = require('./db/users.js');
+const adminDb = require('./db/admin.js');
 const csrfService = require('./services/csrf.service.js');
+const adminService = require('./services/admin.service.js');
+const { applySecurity } = require('./middleware/安全');
+const { requestLogger } = require('./middleware/日志');
 
 // ========== 加载环境变量 ==========
-const envFile = path.join(__dirname, process.env.NODE_ENV === 'production' ? '.env.production' : '.env');
-if (fs.existsSync(envFile)) {
-  const envContent = fs.readFileSync(envFile, 'utf8');
-  envContent.split('\n').forEach(line => {
-    const trimmed = line.trim();
-    if (trimmed && !trimmed.startsWith('#')) {
-      const [key, ...val] = trimmed.split('=');
-      if (key && val.length > 0 && !process.env[key]) {
-        process.env[key] = val.join('=');
-      }
-    }
-  });
-}
+require('dotenv').config({ path: path.join(__dirname, process.env.NODE_ENV === 'production' ? '.env.production' : '.env') });
 
 // ========== 管理员安全配置（兼容 .env） ==========
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'your_admin_password';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+if (!ADMIN_PASSWORD) {
+  console.error('[FATAL] ADMIN_PASSWORD 环境变量未设置，拒绝启动');
+  process.exit(1);
+}
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
 
 // ========== 从独立文件加载管理后台HTML ==========
@@ -152,6 +148,10 @@ function extractId(pathname, prefix) {
 
 // ========== 创建服务器 ==========
 const server = http.createServer((req, res) => {
+  // ===== 中间件 =====
+  applySecurity(req, res);
+  requestLogger(req, res);
+
   const origin = req.headers.origin || '';
   const allowOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : '';
   res.setHeader('Access-Control-Allow-Origin', allowOrigin);
@@ -183,6 +183,10 @@ const server = http.createServer((req, res) => {
   // 头像图片
   if (req.method === 'GET' && pathname.startsWith('/avatars/')) {
     const fileName = pathname.replace('/avatars/', '');
+    // 防止路径穿越攻击
+    if (fileName.includes('..') || fileName.includes('\0') || fileName.includes('\\')) {
+      res.writeHead(400); res.end('Invalid path'); return;
+    }
     const filePath = path.join(__dirname, '..', 'uploads', 'avatars', fileName);
     const ext = path.extname(filePath).toLowerCase();
     const mimeTypes = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.gif': 'image/gif', '.webp': 'image/webp' };
@@ -205,7 +209,8 @@ const server = http.createServer((req, res) => {
   }
   if (req.method === 'GET' && (pathname === '/admin/main' || pathname === '/admin/main/')) {
     if (!checkAdminAuth(req)) {
-      res.writeHead(302, {'Location': '/jzxr/admin/'}); res.end(); return;
+      const base = rawPath.startsWith('/jzxr/') ? '/jzxr' : '';
+      res.writeHead(302, {'Location': base + '/admin/'}); res.end(); return;
     }
     res.writeHead(200, {'Content-Type': 'text/html; charset=utf-8'}); res.end(MAIN_HTML); return;
   }
@@ -355,7 +360,7 @@ const server = http.createServer((req, res) => {
       try {
         const data = JSON.parse(body);
         paymentsDb.approveContactUnlockRequest(id, data.admin_note || '');
-        userDb.logAdminAction('approve_contact_unlock', String(id), { note: data.admin_note || '' });
+        adminDb.logAdminAction('approve_contact_unlock', String(id), { note: data.admin_note || '' });
         res.writeHead(200, {'Content-Type': 'application/json; charset=utf-8'});
         res.end(JSON.stringify({success: true, message: '已通过审核'}));
       } catch(e) { res.writeHead(500, {'Content-Type': 'application/json; charset=utf-8'}); res.end(JSON.stringify({success: false, message: e.message})); }
@@ -374,7 +379,7 @@ const server = http.createServer((req, res) => {
       try {
         const data = JSON.parse(body);
         paymentsDb.rejectContactUnlockRequest(id, data.admin_note || '');
-        userDb.logAdminAction('reject_contact_unlock', String(id), { note: data.admin_note || '' });
+        adminDb.logAdminAction('reject_contact_unlock', String(id), { note: data.admin_note || '' });
         res.writeHead(200, {'Content-Type': 'application/json; charset=utf-8'});
         res.end(JSON.stringify({success: true, message: '已拒绝'}));
       } catch(e) { res.writeHead(500, {'Content-Type': 'application/json; charset=utf-8'}); res.end(JSON.stringify({success: false, message: e.message})); }
@@ -390,7 +395,7 @@ const server = http.createServer((req, res) => {
     const idMatch = pathname.match(/\/(\d+)$/);
     const id = parseInt(idMatch[1]);
     paymentsDb.deleteContactUnlockRequest(id);
-    userDb.logAdminAction('delete_contact_unlock', String(id), {});
+    adminDb.logAdminAction('delete_contact_unlock', String(id), {});
     res.writeHead(200, {'Content-Type': 'application/json; charset=utf-8'});
     res.end(JSON.stringify({success: true, message: '已删除'})); return;
   }
@@ -491,7 +496,7 @@ const server = http.createServer((req, res) => {
         const data = JSON.parse(body);
         const viewerId = data.viewer_id || '';
         if (viewerId) paymentsDb.unlockContact(viewerId, targetId, '手动解锁');
-        userDb.logAdminAction('unlock_contact', targetId, { viewerId, action: 'admin_unlock' });
+        adminDb.logAdminAction('unlock_contact', targetId, { viewerId, action: 'admin_unlock' });
         res.writeHead(200, {'Content-Type': 'application/json; charset=utf-8'});
         res.end(JSON.stringify({success: true, message: '解锁成功'}));
       } catch (e) {
@@ -538,7 +543,7 @@ const server = http.createServer((req, res) => {
 
   // --- 举报 ---
   if (req.method === 'POST' && pathname === '/api/reports') {
-    reportRoutes.addReport(req, res); return;
+    reportRoutes.addReport(req, res, readBodyWithLimit); return;
   }
   if (req.method === 'GET' && pathname === '/api/reports') {
     reportRoutes.getAllReports(req, res, checkAdminAuth); return;
@@ -569,7 +574,7 @@ const server = http.createServer((req, res) => {
   // --- 自定义筛选字段 ---
   if (req.method === 'GET' && pathname === '/api/custom-fields') {
     try {
-      const fields = userDb.getAllCustomFilters();
+      const fields = adminDb.getAllCustomFilters();
       const parsed = fields.map(f => ({
         ...f,
         options: f.field_options ? f.field_options.split(',').filter(o => o.trim()) : []
@@ -596,7 +601,7 @@ const server = http.createServer((req, res) => {
         let fieldOptions = '';
         if (Array.isArray(data.field_options)) fieldOptions = data.field_options.join(',');
         else if (typeof data.field_options === 'string') fieldOptions = data.field_options;
-        const field = userDb.addCustomFilter(
+        const field = adminDb.addCustomFilter(
           data.field_key.trim(), data.field_label.trim(),
           data.field_type || 'text', data.description || '', fieldOptions
         );
@@ -623,7 +628,7 @@ const server = http.createServer((req, res) => {
       res.writeHead(400, {'Content-Type': 'application/json; charset=utf-8'});
       res.end(JSON.stringify({success: false, message: '无效的 ID'})); return;
     }
-    const deleted = userDb.deleteCustomFilter(id);
+    const deleted = adminDb.deleteCustomFilter(id);
     res.writeHead(200, {'Content-Type': 'application/json; charset=utf-8'});
     res.end(JSON.stringify({success: deleted, message: deleted ? '删除成功' : '未找到'})); return;
   }
@@ -635,5 +640,45 @@ const server = http.createServer((req, res) => {
 
 const PORT = process.env.PORT || 8080;
 server.listen(PORT, () => {
-  // server is running
+  console.log('');
+  console.log('╔══════════════════════════════════════════╗');
+  console.log('║     精准匹配 - 后端服务已启动            ║');
+  console.log('╠══════════════════════════════════════════╣');
+  console.log(`║  API地址: http://localhost:${PORT}           ║`);
+  console.log(`║  环境: ${process.env.NODE_ENV || 'development'}                           ║`);
+  console.log('╚══════════════════════════════════════════╝');
+  console.log('');
+});
+
+// ===== 全局错误处理 =====
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[Unhandled Rejection] at:', promise, 'reason:', reason);
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('[Uncaught Exception]', error);
+  try { dbIndex.closeDb(); } catch(e) {}
+  process.exit(1);
+});
+
+// ===== 优雅关闭 =====
+process.on('SIGINT', () => {
+  console.log('\n[Server] 正在关闭...');
+  server.close(() => {
+    try { dbIndex.closeDb(); } catch(e) {}
+    console.log('[Server] 已关闭');
+    process.exit(0);
+  });
+  // 10秒后强制退出
+  setTimeout(() => process.exit(1), 10000);
+});
+
+process.on('SIGTERM', () => {
+  console.log('\n[Server] 收到 SIGTERM，正在关闭...');
+  server.close(() => {
+    try { dbIndex.closeDb(); } catch(e) {}
+    console.log('[Server] 已关闭');
+    process.exit(0);
+  });
+  setTimeout(() => process.exit(1), 10000);
 });

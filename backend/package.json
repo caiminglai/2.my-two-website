@@ -5,7 +5,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js",
+    "dev": "node --watch server.js",
     "backup": "node -e \"require('./db/index').backupDatabase()\"",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -13,7 +13,9 @@
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
-    "better-sqlite3": "^12.10.0"
+    "better-sqlite3": "^12.10.0",
+    "compression": "^1.8.1",
+    "dotenv": "^17.2.0"
   },
   "engines": {
     "node": ">=18.0.0"

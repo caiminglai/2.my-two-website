@@ -84,6 +84,16 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       outDir: 'dist',
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'react-vendor': ['react', 'react-dom'],
+            'router-vendor': ['react-router', 'react-router-dom'],
+            'ui-vendor': ['lucide-react', 'clsx', 'tailwind-merge'],
+            'utils-vendor': ['zod'],
+          },
+        },
+      },
     },
   }
 })

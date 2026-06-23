@@ -3,8 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>管理后台 - 数据管理</title>
-<link rel="stylesheet" href="style.css">
+<title>精准匹配 - 数据管理</title>
 <style>
 body{font-family:Arial,"Microsoft YaHei",sans-serif;background:linear-gradient(180deg, #FFF0F5 0%, #FFE4E9 30%, #FFD6E0 100%);color:#333;padding:25px;min-height:100vh}
 .container{max-width:1000px;margin:0 auto}
@@ -167,7 +166,7 @@ tbody tr:hover{background:#FFF5F8}
 <div class="decor2"></div>
 <div class="container">
   <div class="header">
-    <h1>✧ 数据管理 ♡</h1>
+    <h1>✧ 精准匹配 · 数据管理 ♡</h1>
     <button class="logout" onclick="logout()">退出 ⋆</button>
   </div>
 
@@ -557,8 +556,20 @@ tbody tr:hover{background:#FFF5F8}
   </div>
 </div>
 
-<script src="app.js"></script>
 <script>
+var BASE=(function(){var p=window.location.pathname;if(p.indexOf('/jzxr')===0)return'/jzxr';return'';})();
+function resolveAvatar(a){
+  if(!a)return'';
+  if(a.startsWith('http'))return a;
+  if(a.startsWith('data:'))return a;
+  if(a.startsWith('/'))return BASE+a;
+  return BASE+'/avatars/'+a;
+}
+function resolveProofUrl(p){
+  if(!p)return'';
+  var s=String(p).replace(/^\/+/, '');
+  return BASE+'/'+s;
+}
 var customPromptCallback=null;
 var customPromptMode='alert';
 
@@ -613,7 +624,7 @@ function searchUsers(){
     alert('请输入搜索关键词');
     return;
   }
-  var url='/api/users?keyword='+encodeURIComponent(keyword);
+  var url=BASE+'/api/users?keyword='+encodeURIComponent(keyword);
   if(exact) url+='&exact=true';
   var xhr=new XMLHttpRequest();
   xhr.open('GET',url,true);
@@ -650,7 +661,7 @@ var pageSize=100;
 var selectedUserIds=new Set();
 function loadData(){
   var xhr=new XMLHttpRequest();
-  xhr.open('GET','/api/users',true);
+  xhr.open('GET',BASE+'/api/users',true);
   xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
   xhr.onreadystatechange=function(){
     if(xhr.readyState===4&&xhr.status===200){
@@ -683,18 +694,7 @@ function renderTable(users){
     var city=row.data&&row.data.city?row.data.city:'-';
     var contact=row.data&&row.data.contact?row.data.contact:'-';
     var avatar=row.data&&row.data.avatar?row.data.avatar:'';
-    var avatarSrc='';
-    if(avatar){
-      if(avatar.startsWith('http')){
-        avatarSrc=avatar;
-      }else if(avatar.startsWith('/avatars/')){
-        avatarSrc='/jzxr'+avatar;
-      }else if(avatar.startsWith('/uploads/')){
-        avatarSrc='/jzxr'+avatar;
-      }else{
-        avatarSrc='/jzxr/avatars/'+escapeHtml(avatar);
-      }
-    }
+    var avatarSrc=resolveAvatar(avatar);
     var tr=document.createElement('tr');
 
     // 选择框
@@ -926,7 +926,7 @@ function closeModal(){document.getElementById('delModal').classList.remove('show
 function confirmDelete(){
   if(!delId)return;
   var xhr=new XMLHttpRequest();
-  xhr.open('DELETE','/api/users/'+encodeURIComponent(delId),true);
+  xhr.open('DELETE',BASE+'/api/users/'+encodeURIComponent(delId),true);
   xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
   xhr.onreadystatechange=function(){if(xhr.readyState===4&&xhr.status===200){closeModal();loadData();}};
   xhr.send();
@@ -970,7 +970,7 @@ function batchDeleteUsers(){
     var failed=0;
     ids.forEach(function(id){
       var xhr=new XMLHttpRequest();
-      xhr.open('DELETE','/api/users/'+encodeURIComponent(id),true);
+      xhr.open('DELETE',BASE+'/api/users/'+encodeURIComponent(id),true);
       xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
       xhr.onreadystatechange=function(){
         if(xhr.readyState===4){
@@ -1105,7 +1105,7 @@ function batchImportUsers(){
     var validUsers=rows.map(csvRowToUser);
     showConfirm('确认导入 '+validUsers.length+' 条用户数据？',function(){
       var xhr=new XMLHttpRequest();
-      xhr.open('POST','/api/users/batch',true);
+      xhr.open('POST',BASE+'/api/users/batch',true);
       xhr.setRequestHeader('Content-Type','application/json');
       xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
       xhr.onreadystatechange=function(){
@@ -1151,16 +1151,7 @@ function editRow(id){
   var avatarPreview=document.getElementById('avatarPreview');
   avatarPreview.innerHTML='';
   if(d.avatar){
-    var editAvatarSrc='';
-    if(d.avatar.startsWith('http')){
-      editAvatarSrc=d.avatar;
-    }else if(d.avatar.startsWith('/avatars/')){
-      editAvatarSrc='/jzxr'+d.avatar;
-    }else if(d.avatar.startsWith('/uploads/')){
-      editAvatarSrc='/jzxr'+d.avatar;
-    }else{
-      editAvatarSrc='/jzxr/avatars/'+escapeHtml(d.avatar);
-    }
+    var editAvatarSrc=resolveAvatar(d.avatar);
     var img=document.createElement('img');
     img.src=editAvatarSrc;
     img.style.width='100%';
@@ -1223,7 +1214,7 @@ function confirmEdit(){
     formData.append('avatar',avatarFile);
     
     var xhr=new XMLHttpRequest();
-    xhr.open('PUT','/api/users/'+encodeURIComponent(editId),true);
+    xhr.open('PUT',BASE+'/api/users/'+encodeURIComponent(editId),true);
     xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
     xhr.onreadystatechange=function(){
       if(xhr.readyState===4){
@@ -1248,7 +1239,7 @@ function confirmEdit(){
     updateData.data.personality=document.getElementById('editPersonality').value;
     updateData.data.expectation=document.getElementById('editExpectation').value;
     var xhr=new XMLHttpRequest();
-    xhr.open('PUT','/api/users/'+encodeURIComponent(editId),true);
+    xhr.open('PUT',BASE+'/api/users/'+encodeURIComponent(editId),true);
     xhr.setRequestHeader('Content-Type','application/json');
     xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
     xhr.onreadystatechange=function(){
@@ -1304,7 +1295,7 @@ var selectedDepositIds=new Set();
 
 function loadDeposits(){
   var xhr=new XMLHttpRequest();
-  xhr.open('GET','/api/admin/deposits',true);
+  xhr.open('GET',BASE+'/api/admin/deposits',true);
   xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
   xhr.onreadystatechange=function(){
     if(xhr.readyState===4&&xhr.status===200){
@@ -1334,10 +1325,7 @@ function buildAvatarElement(avatar, name, size){
   size=size||28;
   var src='';
   if(avatar){
-    if(avatar.startsWith('http')) src=avatar;
-    else if(avatar.startsWith('/avatars/')) src='/jzxr'+avatar;
-    else if(avatar.startsWith('/uploads/')) src='/jzxr'+avatar;
-    else src='/jzxr/avatars/'+avatar;
+    src=resolveAvatar(avatar);
   }
   var wrap=document.createElement('span');
   wrap.style.display='inline-flex';
@@ -1432,7 +1420,7 @@ function renderDepositsTable(){
     var td3=document.createElement('td');
     if(deposit.proof_path){
       var _raw=String(deposit.proof_path).replace(/^\/+/,'');
-      var _proof='/jzxr/'+_raw;
+      var _proof=BASE+BASE+'/jzxr/'+_raw;
       var thumb=document.createElement('img');
       thumb.src=_proof;
       thumb.alt='凭证';
@@ -1518,23 +1506,23 @@ function viewProof(proofPath, depositId){
   var modal=document.getElementById('viewProofModal');
   var img=document.getElementById('proofImage');
   var finalSrc;
-  if(proofPath.startsWith('/jzxr/')){
+  if(proofPath.startsWith(BASE+'/jzxr/') || proofPath.startsWith('/jzxr/')){
     finalSrc=proofPath;
   }else{
     var _rp=String(proofPath).replace(/^\/+/,'');
-    finalSrc='/jzxr/'+_rp;
+    finalSrc=BASE+'/jzxr/'+_rp;
   }
   img.onerror=function(){
     if(depositId){
       var xhr=new XMLHttpRequest();
-      xhr.open('GET','/api/admin/deposits/proof/'+depositId,true);
+      xhr.open('GET',BASE+'/api/admin/deposits/proof/'+depositId,true);
       xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
       xhr.onreadystatechange=function(){
         if(xhr.readyState===4&&xhr.status===200){
           var d=JSON.parse(xhr.responseText);
           if(d.success&&d.data&&d.data.proof_path){
             img.onerror=null;
-            img.src='/jzxr/'+String(d.data.proof_path).replace(/^\/+/,'');
+            img.src=BASE+'/jzxr/'+String(d.data.proof_path).replace(/^\/+/,'');
           }
         }
       };
@@ -1553,7 +1541,7 @@ function approveDeposit(id){
   showPrompt('请输入审核备注（可选）：','',function(note){
     if(note===null) return;
     var xhr=new XMLHttpRequest();
-    xhr.open('PUT','/api/admin/deposits/'+id+'/approve',true);
+    xhr.open('PUT',BASE+'/api/admin/deposits/'+id+'/approve',true);
     xhr.setRequestHeader('Content-Type','application/json');
     xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
     xhr.onreadystatechange=function(){
@@ -1579,7 +1567,7 @@ function rejectDeposit(id){
   showPrompt('请输入拒绝原因：','',function(note){
     if(note===null) return;
     var xhr=new XMLHttpRequest();
-    xhr.open('PUT','/api/admin/deposits/'+id+'/reject',true);
+    xhr.open('PUT',BASE+'/api/admin/deposits/'+id+'/reject',true);
     xhr.setRequestHeader('Content-Type','application/json');
     xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
     xhr.onreadystatechange=function(){
@@ -1604,7 +1592,7 @@ function rejectDeposit(id){
 function deleteDeposit(id){
   showConfirm('确定删除这条保证金记录吗？',function(){
     var xhr=new XMLHttpRequest();
-    xhr.open('DELETE','/api/admin/deposits/'+id,true);
+    xhr.open('DELETE',BASE+'/api/admin/deposits/'+id,true);
     xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
     xhr.onreadystatechange=function(){
       if(xhr.readyState===4){
@@ -1660,7 +1648,7 @@ function batchApproveDeposits(){
     var failed=0;
     ids.forEach(function(id){
       var xhr=new XMLHttpRequest();
-      xhr.open('PUT','/api/admin/deposits/'+id+'/approve',true);
+      xhr.open('PUT',BASE+'/api/admin/deposits/'+id+'/approve',true);
       xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
       xhr.onreadystatechange=function(){
         if(xhr.readyState===4){
@@ -1726,7 +1714,7 @@ function resetDepositsFilter(){
 
 function loadReports(){
   var xhr=new XMLHttpRequest();
-  xhr.open('GET','/api/reports',true);
+  xhr.open('GET',BASE+'/api/reports',true);
   xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
   xhr.onreadystatechange=function(){
     if(xhr.readyState===4&&xhr.status===200){
@@ -1783,13 +1771,7 @@ function renderReportsTable(){
     td1.style.paddingLeft='4px';
     var userWrap=document.createElement('div');
     userWrap.style.cssText='display:flex;align-items:center;gap:8px;';
-    var avatarSrc='';
-    if(reportedAvatar){
-      if(reportedAvatar.startsWith('http')) avatarSrc=reportedAvatar;
-      else if(reportedAvatar.startsWith('/avatars/')) avatarSrc='/jzxr'+reportedAvatar;
-      else if(reportedAvatar.startsWith('/uploads/')) avatarSrc='/jzxr'+reportedAvatar;
-      else avatarSrc='/jzxr/avatars/'+escapeHtml(reportedAvatar);
-    }
+    var avatarSrc=resolveAvatar(reportedAvatar);
     if(avatarSrc){
       var imgEl=document.createElement('img');
       imgEl.src=avatarSrc;
@@ -1829,7 +1811,7 @@ function renderReportsTable(){
     var proofPath=report.proof_path||report.proofPath||'';
     if(proofPath){
       var _raw2=String(proofPath).replace(/^\/+/,'');
-      var _proof2='/jzxr/'+_raw2;
+      var _proof2=BASE+BASE+'/jzxr/'+_raw2;
       var thumb=document.createElement('img');
       thumb.src=_proof2;
       thumb.alt='凭证';
@@ -1909,7 +1891,7 @@ function resolveReport(id,newStatus){
   var label=newStatus==='resolved'?'解决':'驳回';
   showConfirm('确认'+label+'这条举报记录？',function(){
     var xhr=new XMLHttpRequest();
-    xhr.open('PUT','/api/reports/'+id+'/status',true);
+    xhr.open('PUT',BASE+'/api/reports/'+id+'/status',true);
     xhr.setRequestHeader('Content-Type','application/json');
     xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
     xhr.onreadystatechange=function(){
@@ -1927,7 +1909,7 @@ function resolveReport(id,newStatus){
 function delReport(id){
   showConfirm('确定要删除这条举报记录吗？',function(){
     var xhr=new XMLHttpRequest();
-    xhr.open('DELETE','/api/reports/'+id,true);
+    xhr.open('DELETE',BASE+'/api/reports/'+id,true);
     xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
     xhr.onreadystatechange=function(){
       if(xhr.readyState===4&&xhr.status===200){
@@ -1974,7 +1956,7 @@ function batchUpdateReports(status){
   var failed=0;
   ids.forEach(function(id){
     var xhr=new XMLHttpRequest();
-    xhr.open('PUT','/api/reports/'+id+'/status',true);
+    xhr.open('PUT',BASE+'/api/reports/'+id+'/status',true);
     xhr.setRequestHeader('Content-Type','application/json');
     xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
     xhr.onreadystatechange=function(){
@@ -2059,7 +2041,7 @@ var allCustomFields=[];
 
 function loadCustomFields(){
   var xhr=new XMLHttpRequest();
-  xhr.open('GET','/api/custom-fields',true);
+  xhr.open('GET',BASE+'/api/custom-fields',true);
   xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
   xhr.onreadystatechange=function(){
     if(xhr.readyState===4&&xhr.status===200){
@@ -2139,7 +2121,7 @@ function addCustomField(){
     return;
   }
   var xhr=new XMLHttpRequest();
-  xhr.open('POST','/api/admin/custom-fields',true);
+  xhr.open('POST',BASE+'/api/admin/custom-fields',true);
   xhr.setRequestHeader('Content-Type','application/json');
   xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
   xhr.onreadystatechange=function(){
@@ -2160,7 +2142,7 @@ function addCustomField(){
 function deleteCustomField(id){
   showConfirm('确定要删除该自定义字段吗？',function(){
     var xhr=new XMLHttpRequest();
-    xhr.open('DELETE','/api/admin/custom-fields/'+encodeURIComponent(id),true);
+    xhr.open('DELETE',BASE+'/api/admin/custom-fields/'+encodeURIComponent(id),true);
     xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
     xhr.onreadystatechange=function(){
       if(xhr.readyState===4&&xhr.status===200){
@@ -2178,7 +2160,7 @@ var selectedUnlockIds=new Set();
 
 function loadUnlockRecords(){
   var xhr=new XMLHttpRequest();
-  xhr.open('GET','/api/admin/unlock-contact-requests',true);
+  xhr.open('GET',BASE+'/api/admin/unlock-contact-requests',true);
   xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
   xhr.onreadystatechange=function(){
     if(xhr.readyState===4&&xhr.status===200){
@@ -2263,7 +2245,7 @@ function renderUnlockRecordsTable(){
       if(targetAvatarRaw.startsWith('http')||targetAvatarRaw.startsWith('/')){
         targetAvatar=targetAvatarRaw;
       }else{
-        targetAvatar='/jzxr/avatars/'+targetAvatarRaw;
+        targetAvatar=resolveAvatar(targetAvatarRaw);
       }
     }
     var td2=document.createElement('td');
@@ -2287,11 +2269,11 @@ function renderUnlockRecordsTable(){
       td3.style.color='#FF85B3';
     }
 
-    // 凭证图片（加 /jzxr 前缀走代理访问后端 uploads）
+    // 凭证图片（加 BASE 前缀走代理访问后端 uploads）
     var td4=document.createElement('td');
     if(record.proof_path){
       var rawPath=String(record.proof_path).replace(/^\/+/,'');
-      var proofSrc='/jzxr/'+rawPath;
+      var proofSrc=BASE+BASE+'/jzxr/'+rawPath;
       var proofImg=document.createElement('img');
       proofImg.src=proofSrc;
       proofImg.alt='凭证';
@@ -2390,7 +2372,7 @@ function deleteUnlockRecord(id){
   if(!id&&id!==0) return;
   showConfirm('确认删除此记录？删除后不可恢复。',function(){
     var xhr=new XMLHttpRequest();
-    xhr.open('DELETE','/api/admin/unlock-contact-requests/'+id,true);
+    xhr.open('DELETE',BASE+'/api/admin/unlock-contact-requests/'+id,true);
     xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
     xhr.onreadystatechange=function(){
       if(xhr.readyState===4){
@@ -2410,7 +2392,7 @@ function approveUnlockRecord(id){
   if(!id&&id!==0) return;
   showConfirm('确认通过此查看联系方式申请？通过后用户将能看到对方完整联系方式。',function(){
     var xhr=new XMLHttpRequest();
-    xhr.open('PUT','/api/admin/unlock-contact-requests/'+id+'/approve',true);
+    xhr.open('PUT',BASE+'/api/admin/unlock-contact-requests/'+id+'/approve',true);
     xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
     xhr.setRequestHeader('Content-Type','application/json');
     xhr.onreadystatechange=function(){
@@ -2431,7 +2413,7 @@ function rejectUnlockRecord(id){
   if(!id&&id!==0) return;
   showConfirm('确认拒绝此申请？',function(){
     var xhr=new XMLHttpRequest();
-    xhr.open('PUT','/api/admin/unlock-contact-requests/'+id+'/reject',true);
+    xhr.open('PUT',BASE+'/api/admin/unlock-contact-requests/'+id+'/reject',true);
     xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
     xhr.setRequestHeader('Content-Type','application/json');
     xhr.onreadystatechange=function(){
@@ -2475,7 +2457,7 @@ function batchApproveUnlockRecords(){
   var completed=0,failed=0;
   ids.forEach(function(id){
     var xhr=new XMLHttpRequest();
-    xhr.open('PUT','/api/admin/unlock-contact-requests/'+id+'/approve',true);
+    xhr.open('PUT',BASE+'/api/admin/unlock-contact-requests/'+id+'/approve',true);
     xhr.setRequestHeader('Authorization','Bearer '+(localStorage.getItem('admin_token')||''));
     xhr.setRequestHeader('Content-Type','application/json');
     xhr.onreadystatechange=function(){
@@ -2512,7 +2494,7 @@ window.addEventListener('load',function(){
   startDepositAutoRefresh();
 });
 
-function logout(){localStorage.removeItem('admin_token');document.cookie='admin_token=;path=/;max-age=0';window.location.href='/jzxr/admin/';}
+function logout(){localStorage.removeItem('admin_token');document.cookie='admin_token=;path=/;max-age=0';window.location.href=BASE+'/admin/';}
 loadData();
 </script>
 </body>

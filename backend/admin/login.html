@@ -54,6 +54,7 @@ body{font-family:Arial,"Microsoft YaHei",sans-serif;background:linear-gradient(1
   <p class="err" id="err"></p>
 </div>
 <script>
+var BASE=(function(){var p=window.location.pathname;if(p.indexOf('/jzxr')===0)return'/jzxr';return'';})();
 document.getElementById('loginBtn').onclick=function(){
   var username=document.getElementById('username').value.trim();
   var pwd=document.getElementById('pwd').value;
@@ -62,7 +63,7 @@ document.getElementById('loginBtn').onclick=function(){
   if(!pwd){err.textContent='请输入密码~';return;}
   err.textContent='';
   var xhr=new XMLHttpRequest();
-  xhr.open('POST','/jzxr/api/admin/login',true);
+  xhr.open('POST',BASE+'/api/admin/login',true);
   xhr.setRequestHeader('Content-Type','application/json');
   xhr.onreadystatechange=function(){
     if(xhr.readyState===4){
@@ -71,7 +72,7 @@ document.getElementById('loginBtn').onclick=function(){
         if(d.success && d.token){
           localStorage.setItem('admin_token',d.token);
           document.cookie='admin_token='+d.token+';path=/;max-age=86400;SameSite=Lax';
-          window.location.href='/jzxr/admin/main/';
+          window.location.href=BASE+'/admin/main/';
         }else{err.textContent=d.message||'密码错误呀~';}
       }else{
         try{var d=JSON.parse(xhr.responseText);err.textContent=d.message||'登录失败呢~';}catch(e){err.textContent='登录失败呢~';}

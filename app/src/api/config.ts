@@ -7,7 +7,7 @@ const ENV_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 // 开发环境: /jzxr/api（通过代理转发到 http://localhost:8080/api）
 // 生产环境: http://your_server_ip/jzxr/api
-export const API_BASE_URL = ENV_BASE_URL || '/jzxr/api';
+export const API_BASE_URL = ENV_BASE_URL || '/api';
 
 // API 端点
 export const API_ENDPOINTS = {
@@ -35,17 +35,24 @@ export const API_ENDPOINTS = {
   checkUnlock: (id: string) => `/users/${encodeURIComponent(id)}/check-unlock`,
 } as const;
 
+// 动态获取基础路径（支持 /jzxr 子路径部署和根路径部署）
+const getBasePath = (): string => {
+  if (typeof window !== 'undefined' && window.location.pathname.startsWith('/jzxr')) return '/jzxr';
+  return '';
+};
+
 // 头像 URL 规范化 - 处理各种 avatar 存储格式：/uploads/avatars/x.jpg、/avatars/x.jpg、x.jpg、http(s)://...
 export const normalizeAvatarUrl = (avatar: string | undefined | null): string | null => {
   if (!avatar) return null;
   if (avatar.startsWith('http') || avatar.startsWith('data:')) return avatar;
+  const base = getBasePath();
   if (avatar.startsWith('/uploads/') || avatar.startsWith('/avatars/')) {
-    return `/jzxr${avatar}`
+    return `${base}${avatar}`
   }
   if (avatar.startsWith('/')) {
-    return `/jzxr${avatar}`
+    return `${base}${avatar}`
   }
-  return `/jzxr/uploads/avatars/${avatar}`
+  return `${base}/uploads/avatars/${avatar}`
 };
 
 // 请求拦截器和安全配置

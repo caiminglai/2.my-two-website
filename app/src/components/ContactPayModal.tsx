@@ -2,6 +2,11 @@ import { useState } from 'react';
 import { ArrowLeft, Zap, Upload, CheckCircle } from 'lucide-react';
 import { API_BASE_URL } from '../api/config';
 
+const getBasePath = () => {
+  if (typeof window !== 'undefined' && window.location.pathname.startsWith('/jzxr')) return '/jzxr';
+  return '';
+};
+
 interface ContactPayModalProps {
   targetUserId: string;
   amount?: number;
@@ -183,7 +188,7 @@ export default function ContactPayModal({ targetUserId, amount = DEFAULT_AMOUNT,
             <div className="bg-white rounded-xl p-4 mb-4 border-2 border-dashed" style={{ borderColor: '#F0E4D4' }}>
               <div className="aspect-square w-full max-w-[280px] mx-auto bg-gray-100 rounded-lg flex items-center justify-center mb-3">
                 <img
-                  src={`/jzxr/${method}-qr.png`}
+                  src={`${getBasePath()}/${method}-qr.png`}
                   alt={`${method === 'alipay' ? '支付宝' : '微信'}收款码`}
                   className="w-full h-full object-contain rounded-lg"
                   onError={(e) => {

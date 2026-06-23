@@ -317,8 +317,13 @@ function initTables() {
 
 // ========== Token 与加密工具（纯函数，无状态变更） ==========
 
-const TOKEN_SECRET = process.env.TOKEN_SECRET || crypto.createHash('sha256').update('match-platform-secret-key-' + (process.env.ADMIN_PASSWORD || 'default')).digest('hex');
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || crypto.createHash('sha256').update('contact-encryption-key-' + (process.env.ADMIN_PASSWORD || 'default')).digest();
+const _tokenSeed = process.env.TOKEN_SECRET || process.env.ADMIN_PASSWORD;
+if (!_tokenSeed) {
+  console.error('[FATAL] TOKEN_SECRET or ADMIN_PASSWORD must be set.');
+  process.exit(1);
+}
+const TOKEN_SECRET = process.env.TOKEN_SECRET || crypto.createHash('sha256').update('match-platform-secret-key-' + _tokenSeed).digest('hex');
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || crypto.createHash('sha256').update('contact-encryption-key-' + _tokenSeed).digest();
 const IV_LENGTH = 16;
 
 async function hashPassword(password) {

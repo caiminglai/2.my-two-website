@@ -21,7 +21,7 @@ function extractReportId(pathname) {
 }
 
 // ========== POST /api/reports（含 multipart 文件上传）
-function addReport(req, res) {
+function addReport(req, res, readBodyWithLimit) {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     sendJson(res, 401, { success: false, message: '未登录' });
@@ -103,15 +103,23 @@ function addReport(req, res) {
     return;
   }
 
-  // JSON
-  let body = '';
-  req.on('data', chunk => { body += chunk.toString(); });
-  req.on('end', () => {
+  // JSON - use readBodyWithLimit if available
+  const readBody = readBodyWithLimit
+    ? readBodyWithLimit(req)
+    : new Promise((resolve, reject) => {
+        let body = '';
+        req.on('data', chunk => { body += chunk.toString(); });
+        req.on('end', () => resolve(body));
+        req.on('error', reject);
+      });
+  readBody.then(body => {
     try {
       const data = JSON.parse(body || '{}');
       const result = reportsService.submitReport(token, data.reportedId, data.reportType, data.description, null);
       sendJson(res, result.success ? 200 : 400, result);
     } catch (e) { sendJson(res, 500, { success: false, message: '举报失败' }); }
+  }).catch(() => {
+    sendJson(res, 500, { success: false, message: '读取请求体失败' });
   });
 }
 

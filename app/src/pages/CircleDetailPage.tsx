@@ -5,6 +5,11 @@ import { API_BASE_URL, API_ENDPOINTS, normalizeAvatarUrl } from '../api/config';
 import type { Row } from '../data/types';
 import ImagePreview from '../components/ImagePreview';
 
+const getBasePath = () => {
+  if (typeof window !== 'undefined' && window.location.pathname.startsWith('/jzxr')) return '/jzxr';
+  return '';
+};
+
 const CIRCLE_CONFIGS: Record<string, { label: string; icon: typeof Heart; color: string }> = {
   hobbies: { label: '兴趣圈', icon: Sparkles, color: '#E87A5D' },
   food: { label: '美食圈', icon: Utensils, color: '#D4A054' },
@@ -290,14 +295,14 @@ export default function CircleDetailPage() {
                   </p>
                   <div className="flex flex-col gap-3">
                     <div className="p-3 rounded-xl text-center cursor-pointer" style={{ background: '#f8f9fa' }}
-                      onClick={() => setPreviewImage('/jzxr/wechat-qr.png')}>
+                      onClick={() => setPreviewImage(`${getBasePath()}/wechat-qr.png`)}>
                       <div className="text-xs mb-1 font-medium" style={{ color: '#666' }}>微信支付</div>
-                      <img src="/jzxr/wechat-qr.png" alt="微信收款码" className="w-40 h-40 mx-auto rounded-lg" style={{ objectFit: 'cover' }} />
+                      <img src={`${getBasePath()}/wechat-qr.png`} alt="微信收款码" className="w-40 h-40 mx-auto rounded-lg" style={{ objectFit: 'cover' }} />
                     </div>
                     <div className="p-3 rounded-xl text-center cursor-pointer" style={{ background: '#f8f9fa' }}
-                      onClick={() => setPreviewImage('/jzxr/alipay-qr.png')}>
+                      onClick={() => setPreviewImage(`${getBasePath()}/alipay-qr.png`)}>
                       <div className="text-xs mb-1 font-medium" style={{ color: '#666' }}>支付宝</div>
-                      <img src="/jzxr/alipay-qr.png" alt="支付宝收款码" className="w-40 h-40 mx-auto rounded-lg" style={{ objectFit: 'cover' }} />
+                      <img src={`${getBasePath()}/alipay-qr.png`} alt="支付宝收款码" className="w-40 h-40 mx-auto rounded-lg" style={{ objectFit: 'cover' }} />
                     </div>
                   </div>
                   <p className="text-xs text-center mt-3" style={{ color: '#B5A698' }}>
