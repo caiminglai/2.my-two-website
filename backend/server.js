@@ -5,6 +5,7 @@ const path = require('path');
 const dbIndex = require('./db/index.js');
 const paymentsDb = require('./db/payments.js');
 const userDb = require('./db/users.js');
+const csrfService = require('./services/csrf.service.js');
 
 // ========== 加载环境变量 ==========
 const envFile = path.join(__dirname, process.env.NODE_ENV === 'production' ? '.env.production' : '.env');
@@ -408,6 +409,15 @@ const server = http.createServer((req, res) => {
   }
   if (req.method === 'POST' && pathname === '/api/auth/change-password') {
     authRoutes.changePassword(req, res, readBodyWithLimit); return;
+  }
+  
+  if (req.method === 'GET' && pathname === '/api/auth/csrf-token') {
+    const authHeader = req.headers.authorization;
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+    const userId = token ? dbIndex.verifyToken(token) : 'anonymous_' + Math.random().toString(36).substr(2, 9);
+    const csrfToken = csrfService.generateCsrfToken(userId);
+    res.writeHead(200, {'Content-Type': 'application/json; charset=utf-8'});
+    res.end(JSON.stringify({success: true, csrfToken})); return;
   }
   // 短信验证预留接口
   if (req.method === 'POST' && pathname === '/api/auth/sms/register-code') {

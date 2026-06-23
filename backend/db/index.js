@@ -7,6 +7,8 @@ const Database = require('better-sqlite3');
 const path = require('path');
 const crypto = require('crypto');
 const fs = require('fs');
+const bcrypt = require('bcrypt');
+const BCRYPT_ROUNDS = parseInt(process.env.BCRYPT_ROUNDS) || 10;
 
 // 数据库路径（data/ 目录下，与部署分离）
 const DB_PATH = path.join(__dirname, '..', '..', 'data', 'match.db');
@@ -319,8 +321,36 @@ const TOKEN_SECRET = process.env.TOKEN_SECRET || crypto.createHash('sha256').upd
 const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || crypto.createHash('sha256').update('contact-encryption-key-' + (process.env.ADMIN_PASSWORD || 'default')).digest();
 const IV_LENGTH = 16;
 
-function hashPassword(password, salt) {
-  return crypto.createHash('sha256').update(password + salt).digest('hex');
+async function hashPassword(password) {
+  return bcrypt.hash(password, BCRYPT_ROUNDS);
+}
+
+async function verifyPassword(password, hash) {
+  if (!hash) return false;
+  try {
+    if (hash.length === 64 && !hash.startsWith('$2b$') && !hash.startsWith('$2a$')) {
+      return crypto.createHash('sha256').update(password).digest('hex') === hash;
+    }
+    return await bcrypt.compare(password, hash);
+  } catch {
+    return false;
+  }
+}
+
+function hashPasswordSync(password) {
+  return bcrypt.hashSync(password, BCRYPT_ROUNDS);
+}
+
+function verifyPasswordSync(password, hash) {
+  if (!hash) return false;
+  try {
+    if (hash.length === 64 && !hash.startsWith('$2b$') && !hash.startsWith('$2a$')) {
+      return crypto.createHash('sha256').update(password).digest('hex') === hash;
+    }
+    return bcrypt.compareSync(password, hash);
+  } catch {
+    return false;
+  }
 }
 
 function encrypt(text) {
@@ -435,6 +465,9 @@ function restoreFromBackup(backupPath) {
 module.exports = {
   getDb,
   hashPassword,
+  hashPasswordSync,
+  verifyPassword,
+  verifyPasswordSync,
   encrypt,
   decrypt,
   generateToken,

@@ -3,7 +3,7 @@
 // ============================================================
 
 const authDb = require('../db/auth');
-const { generateToken, verifyToken } = require('../db/index');
+const { generateToken, verifyToken, verifyPasswordSync } = require('../db/index');
 
 function register(phone, password, nickname) {
   if (!phone || !password) {
@@ -41,9 +41,7 @@ function changePassword(userId, oldPassword, newPassword) {
   if (!user) {
     return { success: false, message: '用户不存在' };
   }
-  const [hash, salt] = user.password.split(':');
-  const { hashPassword } = require('../db/index');
-  if (hashPassword(oldPassword, salt) !== hash) {
+  if (!verifyPasswordSync(oldPassword, user.password)) {
     return { success: false, message: '原密码错误' };
   }
   authDb.updateAuthUserPassword(userId, newPassword);
