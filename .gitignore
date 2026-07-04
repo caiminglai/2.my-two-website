@@ -63,6 +63,13 @@ ehthumbs.db
 *.txt
 *.xml
 
+# 收款二维码（个人敏感图片，不提交到公开仓库，部署时单独上传）
+# 已由上面的 *.jpg/*.png 规则覆盖，此处仅作说明
+# app/public/wechat-qr.png
+# app/public/alipay-qr.png
+# public/wechat-qr.png
+# public/alipay-qr.png
+
 # ===== 压缩包 =====
 *.zip
 *.rar

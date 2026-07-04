@@ -14,13 +14,9 @@ const adminService = require('./services/admin.service.js');
 const { applySecurity } = require('./middleware/安全');
 const { requestLogger } = require('./middleware/日志');
 
-// ========== 管理员安全配置（兼容 .env） ==========
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
-if (!ADMIN_PASSWORD) {
-  console.error('[FATAL] ADMIN_PASSWORD 环境变量未设置，拒绝启动');
-  process.exit(1);
-}
-const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
+// ========== 管理员安全配置 ==========
+// 管理员密码由 admin.service.js 管理，优先从环境变量读取，其次从数据库读取
+// 此处不做强制检查，避免与数据库存储方式冲突
 
 // ========== 从独立文件加载管理后台HTML ==========
 const ADMIN_HTML = fs.readFileSync(path.join(__dirname, 'admin', 'login.html'), 'utf8');
@@ -48,7 +44,7 @@ function checkAdminAuth(req) {
 }
 
 // ========== CORS 配置 ==========
-const SERVER_ORIGIN = process.env.SERVER_ORIGIN || 'http://your_server_ip';
+const SERVER_ORIGIN = process.env.SERVER_ORIGIN || 'http://localhost:8080';
 const ALLOWED_ORIGINS = [
   'http://localhost:4000',
   'http://localhost:8080',
