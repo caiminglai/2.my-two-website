@@ -43,8 +43,8 @@ body{font-family:Arial,"Microsoft YaHei",sans-serif;background:linear-gradient(1
   <h1>✧ 精准匹配 ✧</h1>
   <p>๑ 管理后台登录 ๑</p>
   <div class="input-group">
-    <label>管理员账号 ♡</label>
-    <input type="text" id="username" placeholder="请输入管理员账号">
+    <label>管理员账号 ♡ <span style="font-size:12px;color:#FFB6C1;">（默认 admin，可不填）</span></label>
+    <input type="text" id="username" placeholder="admin">
   </div>
   <div class="input-group">
     <label>管理密码 ♡</label>
@@ -56,10 +56,9 @@ body{font-family:Arial,"Microsoft YaHei",sans-serif;background:linear-gradient(1
 <script>
 var BASE=(function(){var p=window.location.pathname;if(p.indexOf('/jzxr')===0)return'/jzxr';return'';})();
 document.getElementById('loginBtn').onclick=function(){
-  var username=document.getElementById('username').value.trim();
+  var username=document.getElementById('username').value.trim()||'admin';
   var pwd=document.getElementById('pwd').value;
   var err=document.getElementById('err');
-  if(!username){err.textContent='请输入管理员账号~';return;}
   if(!pwd){err.textContent='请输入密码~';return;}
   err.textContent='';
   var xhr=new XMLHttpRequest();

@@ -36,8 +36,8 @@
     </div>
     
     <div class="input-group">
-      <label>管理员账号</label>
-      <input type="text" id="username" placeholder="请输入管理员账号">
+      <label>管理员账号 <span style="font-size:11px;color:#FFB6C1;">（默认 admin，可不填）</span></label>
+      <input type="text" id="username" placeholder="admin">
     </div>
     
     <div class="input-group">
@@ -57,15 +57,10 @@
     const API_BASE = window.location.pathname.includes('/jzxr') ? '/jzxr' : '';
     
     async function login() {
-      const username = document.getElementById('username').value.trim();
+      const username = document.getElementById('username').value.trim() || 'admin';
       const password = document.getElementById('password').value;
       const errorMsg = document.getElementById('errorMsg');
       
-      if (!username) {
-        errorMsg.textContent = '请输入管理员账号';
-        errorMsg.classList.add('show');
-        return;
-      }
       if (!password) {
         errorMsg.textContent = '请输入密码';
         errorMsg.classList.add('show');

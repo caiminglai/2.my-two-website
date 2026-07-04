@@ -120,21 +120,20 @@ function adminLogin(req, res, readBodyWithLimit, checkLoginRateLimit) {
     return;
   }
   return readBodyWithLimit(req).then(body => {
-    try {
-      const data = JSON.parse(body);
-      // 兼容旧版仅传 password 的调用：未传 username 时使用默认管理员账号
-      const username = data.username || process.env.ADMIN_USERNAME || 'admin';
-      const password = data.password;
-      const result = adminService.verifyAdminAccount(username, password);
+    const data = JSON.parse(body);
+    // 兼容旧版仅传 password 的调用：未传 username 时使用默认管理员账号
+    const username = data.username || process.env.ADMIN_USERNAME || 'admin';
+    const password = data.password;
+    return adminService.verifyAdminAccount(username, password).then(result => {
       if (result.success) {
         const token = generateAdminToken(result.username);
         sendJson(res, 200, { success: true, token, username: result.username });
       } else {
         sendJson(res, 401, { success: false, message: result.message || '管理员账号或密码错误' });
       }
-    } catch (e) {
+    }).catch(e => {
       sendJson(res, 400, { success: false, message: '登录失败' });
-    }
+    });
   }).catch(e => {
     sendJson(res, 413, { success: false, message: e.message || '请求体过大' });
   });
