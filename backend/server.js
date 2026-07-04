@@ -1,7 +1,10 @@
+// ========== 加载环境变量（必须在所有 require 之前执行）==========
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, process.env.NODE_ENV === 'production' ? '.env.production' : '.env') });
+
 const http = require('http');
 const url = require('url');
 const fs = require('fs');
-const path = require('path');
 const dbIndex = require('./db/index.js');
 const paymentsDb = require('./db/payments.js');
 const userDb = require('./db/users.js');
@@ -10,9 +13,6 @@ const csrfService = require('./services/csrf.service.js');
 const adminService = require('./services/admin.service.js');
 const { applySecurity } = require('./middleware/安全');
 const { requestLogger } = require('./middleware/日志');
-
-// ========== 加载环境变量 ==========
-require('dotenv').config({ path: path.join(__dirname, process.env.NODE_ENV === 'production' ? '.env.production' : '.env') });
 
 // ========== 管理员安全配置（兼容 .env） ==========
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
