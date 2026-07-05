@@ -139,4 +139,29 @@ function adminLogin(req, res, readBodyWithLimit, checkLoginRateLimit) {
   });
 }
 
-module.exports = { register, login, changePassword, adminLogin, sendRegisterSmsCode, verifyRegisterSmsCode };
+// ========== GET /api/auth/captcha
+function getCaptcha(req, res) {
+  try {
+    const captcha = captchaService.createCaptcha();
+    sendJson(res, 200, { success: true, data: captcha });
+  } catch (e) {
+    sendJson(res, 500, { success: false, message: '验证码生成失败' });
+  }
+}
+
+// ========== POST /api/auth/captcha/verify
+function verifyCaptcha(req, res, readBodyWithLimit) {
+  return readBodyWithLimit(req).then(body => {
+    try {
+      const data = JSON.parse(body);
+      const result = captchaService.verifyCaptcha(data.captchaId, data.x);
+      sendJson(res, 200, { success: result.success, data: result.success ? { token: result.token } : null, message: result.message });
+    } catch (e) {
+      sendJson(res, 500, { success: false, message: '验证失败' });
+    }
+  }).catch(e => {
+    sendJson(res, 413, { success: false, message: e.message || '请求体过大' });
+  });
+}
+
+module.exports = { register, login, changePassword, adminLogin, sendRegisterSmsCode, verifyRegisterSmsCode, getCaptcha, verifyCaptcha };

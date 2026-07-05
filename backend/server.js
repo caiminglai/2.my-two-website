@@ -412,6 +412,12 @@ const server = http.createServer((req, res) => {
   if (req.method === 'POST' && pathname === '/api/auth/change-password') {
     authRoutes.changePassword(req, res, readBodyWithLimit); return;
   }
+  if (req.method === 'GET' && pathname === '/api/auth/captcha') {
+    authRoutes.getCaptcha(req, res); return;
+  }
+  if (req.method === 'POST' && pathname === '/api/auth/captcha/verify') {
+    authRoutes.verifyCaptcha(req, res, readBodyWithLimit); return;
+  }
   
   if (req.method === 'GET' && pathname === '/api/auth/csrf-token') {
     const authHeader = req.headers.authorization;

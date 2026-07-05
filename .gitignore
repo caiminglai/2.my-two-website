@@ -80,3 +80,6 @@ ehthumbs.db
 *.tmp
 *.bak
 *.old
+
+# AI 工具个人配置
+CLAUDE.md

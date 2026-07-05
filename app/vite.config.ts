@@ -10,7 +10,7 @@ export default defineConfig(({ mode }) => {
     base: basePath,
     plugins: [react()],
     css: {
-      postcss: path.resolve(__dirname, './postcss.config.js'),
+      postcss: path.resolve(__dirname, './postcss.config.mjs'),
     },
     resolve: {
       alias: {
@@ -89,8 +89,7 @@ export default defineConfig(({ mode }) => {
           manualChunks: {
             'react-vendor': ['react', 'react-dom'],
             'router-vendor': ['react-router', 'react-router-dom'],
-            'ui-vendor': ['lucide-react', 'clsx', 'tailwind-merge'],
-            'utils-vendor': ['zod'],
+            'ui-vendor': ['lucide-react'],
           },
         },
       },

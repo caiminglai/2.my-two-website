@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router';
 import {
   X, Plus, Check, Heart, Trash2,
-  MapPin, User, Users, Shield, QrCode, Rocket
+  MapPin, User, Users, Shield, QrCode
 } from 'lucide-react';
 import { FIELD_LABELS } from '../data/constants';
 import type { Column, Row } from '../data/types';
@@ -391,13 +391,17 @@ export default function UserList({
             )}
           </div>
         )}
-        <div className="flex items-center justify-center gap-1.5 mb-2">
-          <Heart size={10} style={{ color: '#E87A5D', opacity: 0.5 }} fill="currentColor" />
-          <p className="text-xs mb-2" style={{ color: '#D4C8B8' }}>精准匹配 — 让每一次相遇都精准</p>
+        <div className="flex flex-col items-center gap-1.5">
+          <div className="flex items-center justify-center gap-1.5">
+            <Heart size={10} style={{ color: '#E87A5D', opacity: 0.5 }} fill="currentColor" />
+            <p className="text-xs" style={{ color: '#D4C8B8' }}>精准匹配 — 让每一次相遇都精准</p>
+          </div>
+          <div className="text-xs" style={{ color: '#B5A698' }}>
+            <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">your_icp_number_2</a>
+            <span className="mx-1.5">·</span>
+            <a href="https://beian.mps.gov.cn/#/query/webSearch?code=33011002019955" target="_blank" rel="noopener noreferrer">浙公网安备33011002019955号</a>
+          </div>
         </div>
-        <Link to="/deploy" className="inline-flex items-center gap-1 text-xs" style={{ color: '#B5A698' }}>
-          <Rocket size={11} /> 部署指南
-        </Link>
       </footer>
     </>
   );

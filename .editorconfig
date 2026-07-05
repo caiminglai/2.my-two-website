@@ -1,0 +1,127 @@
+# ============================================================
+# 精准匹配 - EditorConfig 配置
+# 作用：跨编辑器/IDE 统一代码风格（缩进、换行符、编码等）
+# 支持的编辑器：VS Code、WebStorm、Sublime Text、Vim 等
+# VS Code 需安装 "EditorConfig for VS Code" 扩展
+# ============================================================
+
+# 根目录配置，停止向上查找
+root = true
+
+
+# ============================================================
+# 1. 全局默认配置
+# ============================================================
+[*]
+# 缩进风格：space / tab
+indent_style = space
+
+# 缩进大小
+indent_size = 2
+
+# 制表符宽度（当 indent_style=tab 时生效）
+tab_width = 2
+
+# 换行符：lf / crlf / cr
+# 项目统一使用 LF（Unix 风格），与 .gitattributes 保持一致
+end_of_line = lf
+
+# 文件编码
+charset = utf-8
+
+# 文件末尾保留换行符
+insert_final_newline = true
+
+# 去除行尾空格
+trim_trailing_whitespace = true
+
+# 每行最大字符数（部分编辑器支持）
+max_line_length = 100
+
+
+# ============================================================
+# 2. 各类文件的单独配置
+# ============================================================
+
+# --- JavaScript / TypeScript / React ---
+[*.{js,jsx,ts,tsx,mjs,cjs}]
+indent_style = space
+indent_size = 2
+quote_type = single
+
+
+# --- 样式表 ---
+[*.{css,scss,sass,less}]
+indent_style = space
+indent_size = 2
+
+
+# --- HTML / Vue / JSX 已在上面覆盖 ---
+[*.{html,htm}]
+indent_style = space
+indent_size = 2
+
+
+# --- JSON 配置文件 ---
+[*.{json,jsonc}]
+indent_style = space
+indent_size = 2
+
+
+# --- YAML / YML ---
+[*.{yaml,yml}]
+indent_style = space
+indent_size = 2
+
+
+# --- Markdown ---
+[*.{md,mdx}]
+indent_style = space
+indent_size = 2
+# Markdown 中行尾空格有语义（换行），不去除
+trim_trailing_whitespace = false
+max_line_length = off
+
+
+# --- SQL ---
+[*.sql]
+indent_style = space
+indent_size = 2
+
+
+# --- Python ---
+[*.py]
+indent_style = space
+indent_size = 4
+
+
+# --- Shell 脚本 ---
+[*.{sh,bash,zsh}]
+indent_style = space
+indent_size = 2
+end_of_line = lf
+
+
+# --- Windows 批处理 ---
+[*.{bat,cmd}]
+indent_style = space
+indent_size = 2
+end_of_line = crlf
+
+
+# --- Makefile 必须用 tab ---
+[Makefile]
+indent_style = tab
+
+
+# --- 配置文件 ---
+[*.{ini,conf,toml}]
+indent_style = space
+indent_size = 2
+
+
+# --- 忽略文件（保持原样，不做格式化） ---
+[*.min.{js,css}]
+indent_style = ignore
+trim_trailing_whitespace = false
+insert_final_newline = false

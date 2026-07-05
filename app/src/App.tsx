@@ -8,7 +8,6 @@ const Home = lazy(() => import('./pages/Home'))
 const PostPage = lazy(() => import('./pages/PostPage'))
 const DepositPage = lazy(() => import('./pages/DepositPage'))
 const QrPage = lazy(() => import('./pages/QrPage'))
-const DeployGuide = lazy(() => import('./pages/DeployGuide'))
 const LoginPage = lazy(() => import('./pages/LoginPage'))
 const ProfilePage = lazy(() => import('./pages/ProfilePage'))
 const MyPostsPage = lazy(() => import('./pages/MyPostsPage'))
@@ -17,7 +16,7 @@ const CirclesPage = lazy(() => import('./pages/CirclesPage'))
 const CircleDetailPage = lazy(() => import('./pages/CircleDetailPage'))
 const AntiFraudPage = lazy(() => import('./pages/AntiFraudPage'))
 
-const HIDE_TAB_PATHS = ['/login', '/deploy', '/qr']
+const HIDE_TAB_PATHS = ['/login', '/qr']
 
 // 加载占位符组件 - 骨架屏风格
 function LoadingFallback() {
@@ -71,7 +70,6 @@ export default function App() {
             <Route path="/post" element={<PostPage />} />
             <Route path="/deposit" element={<DepositPage />} />
             <Route path="/qr" element={<QrPage />} />
-            <Route path="/deploy" element={<DeployGuide />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/my-posts" element={<MyPostsPage />} />

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { ArrowLeft, Shield, AlertCircle } from 'lucide-react';
-import { loadColumns, addRow } from '../services/user.service';
+import { loadColumns, loadRows, addRow } from '../services/user.service';
 import { DEPOSIT_RULES } from '../data/constants';
 import type { Row } from '../data/types';
 import { API_BASE_URL, normalizeAvatarUrl } from '../api/config';
@@ -91,7 +91,7 @@ export default function PostPage() {
         alert('网络错误');
       }
     } else {
-      addRow(row);
+      addRow(loadRows(), row);
       navigate('/');
     }
   };
