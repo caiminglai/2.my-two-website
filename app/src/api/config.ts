@@ -33,6 +33,9 @@ export const API_ENDPOINTS = {
   // 联系方式解锁
   unlockContact: (id: string) => `/users/${encodeURIComponent(id)}/unlock-contact`,
   checkUnlock: (id: string) => `/users/${encodeURIComponent(id)}/check-unlock`,
+  // 字段中文映射表
+  fieldMappings: '/field-mappings',
+  fieldLabels: '/field-mappings/labels',
 } as const;
 
 // 动态获取基础路径（支持 /jzxr 子路径部署和根路径部署）

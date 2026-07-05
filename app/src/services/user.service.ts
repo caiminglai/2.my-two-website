@@ -137,8 +137,8 @@ const DEFAULT_COLUMNS: Column[] = [
   { key: 'name', label: '昵称', type: 'text', category: '基本' },
   { key: 'gender', label: '性别', type: 'select', options: GENDER_OPTIONS, category: '基本' },
   { key: 'age', label: '年龄', type: 'text', category: '基本' },
-  { key: 'height', label: '身高(cm)', type: 'text', category: '基本' },
-  { key: 'weight', label: '体重(kg)', type: 'text', category: '基本' },
+  { key: 'height', label: '身高', type: 'text', category: '基本' },
+  { key: 'weight', label: '体重', type: 'text', category: '基本' },
   { key: 'city', label: '城市', type: 'select', options: CITY_OPTIONS, category: '基本' },
 
   { key: 'skinTone', label: '肤色', type: 'select', options: SKIN_TONE_OPTIONS, category: '外貌' },
@@ -153,7 +153,7 @@ const DEFAULT_COLUMNS: Column[] = [
   { key: 'children', label: '子女', type: 'select', options: CHILDREN_OPTIONS, category: '属性' },
   { key: 'education', label: '学历', type: 'select', options: EDUCATION_OPTIONS, category: '属性' },
   { key: 'job', label: '职业', type: 'text', category: '属性' },
-  { key: 'income', label: '年收入', type: 'select', options: INCOME_OPTIONS, category: '属性' },
+  { key: 'income', label: '收入', type: 'select', options: INCOME_OPTIONS, category: '属性' },
   { key: 'house', label: '住房', type: 'select', options: HOUSE_OPTIONS, category: '属性' },
   { key: 'car', label: '购车', type: 'select', options: CAR_OPTIONS, category: '属性' },
 

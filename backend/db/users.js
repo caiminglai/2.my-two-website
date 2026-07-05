@@ -184,7 +184,9 @@ function deleteUser(id, ownerUserId, isAdmin = false) {
   // 清理外键关联数据
   database.prepare('DELETE FROM user_ratings WHERE rater_id = ? OR rated_id = ?').run(id, id);
   database.prepare('DELETE FROM user_reports WHERE reporter_id = ? OR reported_id = ?').run(id, id);
-  database.prepare('DELETE FROM messages WHERE from_user_id = ? OR to_user_id = ?').run(id, id);
+  if (user.user_id) {
+    database.prepare('DELETE FROM user_custom_fields WHERE user_id = ?').run(user.user_id);
+  }
   const stmt = database.prepare('DELETE FROM users WHERE id = ?');
   stmt.run(id);
   return true;
@@ -290,16 +292,53 @@ function searchUsers(criteria, page = 1, limit = 20) {
     }
   }
 
+  // 自定义字段筛选（EAV 键值表）
+  // 每个自定义条件独立查键值表取 user_id 集合，多条件取交集
+  let customFieldUserIds = null; // null 表示尚未限制
+  if (Array.isArray(criteria.custom_fields) && criteria.custom_fields.length > 0) {
+    for (const cf of criteria.custom_fields) {
+      if (!cf.field_key || !cf.field_value) continue;
+      const matchedIds = searchUsersByCustomField(cf.field_key, cf.field_value, isExact);
+      const idSet = new Set(matchedIds);
+      if (customFieldUserIds === null) {
+        customFieldUserIds = idSet;
+      } else {
+        // 多条件取交集
+        customFieldUserIds = new Set([...customFieldUserIds].filter(id => idSet.has(id)));
+      }
+    }
+    // 如果交集为空，直接返回空结果
+    if (customFieldUserIds !== null && customFieldUserIds.size === 0) {
+      return { data: [], count: 0 };
+    }
+  }
+
   const whereClause = conditions.length > 0 ? 'WHERE ' + conditions.join(' AND ') : '';
   const offset = (page - 1) * limit;
 
+  // 如果有自定义字段过滤，需要额外限制 user_id
+  if (customFieldUserIds !== null) {
+    const idList = [...customFieldUserIds];
+    const placeholders = idList.map(() => '?').join(',');
+    const userFilter = `user_id IN (${placeholders})`;
+    const fullWhere = whereClause
+      ? whereClause + ' AND ' + userFilter
+      : 'WHERE ' + userFilter;
+    params.push(...idList);
+
+    const countSql = `SELECT COUNT(*) as count FROM users ${fullWhere}`;
+    const count = database.prepare(countSql).get(...params).count;
+
+    const sql = `SELECT ${ALL_FIELDS.join(', ')}, status FROM users ${fullWhere} ORDER BY created_at DESC LIMIT ? OFFSET ?`;
+    const data = database.prepare(sql).all(...params, limit, offset).map(dbRowToJson);
+    return { data, count };
+  }
+
   const countSql = `SELECT COUNT(*) as count FROM users ${whereClause}`;
-  const countStmt = database.prepare(countSql);
-  const count = countStmt.get(...params).count;
+  const count = database.prepare(countSql).get(...params).count;
 
   const sql = `SELECT ${ALL_FIELDS.join(', ')}, status FROM users ${whereClause} ORDER BY created_at DESC LIMIT ? OFFSET ?`;
-  const stmt = database.prepare(sql);
-  const data = stmt.all(...params, limit, offset).map(dbRowToJson);
+  const data = database.prepare(sql).all(...params, limit, offset).map(dbRowToJson);
 
   return { data, count };
 }
@@ -379,6 +418,59 @@ function getUserStats() {
   };
 }
 
+// ========== 用户自定义字段（EAV 键值表） ==========
+
+function getUserCustomFields(userId) {
+  const database = getDb();
+  return database.prepare(
+    'SELECT field_key, field_value, created_at FROM user_custom_fields WHERE user_id = ? ORDER BY created_at'
+  ).all(userId);
+}
+
+function setUserCustomField(userId, fieldKey, fieldValue) {
+  const database = getDb();
+  const now = Date.now();
+  // 用 INSERT OR REPLACE 实现 upsert（依赖 user_id + field_key 唯一索引）
+  database.prepare(
+    'INSERT OR REPLACE INTO user_custom_fields (user_id, field_key, field_value, created_at) VALUES (?, ?, ?, ?)'
+  ).run(userId, fieldKey.trim(), String(fieldValue).trim(), now);
+  return { field_key: fieldKey.trim(), field_value: String(fieldValue).trim() };
+}
+
+function deleteUserCustomField(userId, fieldKey) {
+  const database = getDb();
+  const stmt = database.prepare(
+    'DELETE FROM user_custom_fields WHERE user_id = ? AND field_key = ?'
+  );
+  const result = stmt.run(userId, fieldKey);
+  return result.changes > 0;
+}
+
+function deleteUserCustomFields(userId) {
+  const database = getDb();
+  database.prepare('DELETE FROM user_custom_fields WHERE user_id = ?').run(userId);
+}
+
+function searchUsersByCustomField(fieldKey, fieldValue, isExact) {
+  const database = getDb();
+  if (isExact) {
+    return database.prepare(
+      'SELECT DISTINCT user_id FROM user_custom_fields WHERE field_key = ? AND field_value = ?'
+    ).all(fieldKey, fieldValue).map(r => r.user_id);
+  }
+  return database.prepare(
+    "SELECT DISTINCT user_id FROM user_custom_fields WHERE field_key = ? AND field_value LIKE ?"
+  ).all(fieldKey, '%' + escapeLikeString(fieldValue) + '%').map(r => r.user_id);
+}
+
+// 获取所有用户的自定义字段（批量，用于前端搜索集成）
+function getAllCustomFields() {
+  const database = getDb();
+  return database.prepare(
+    'SELECT user_id, field_key, field_value FROM user_custom_fields ORDER BY user_id, created_at'
+  ).all();
+}
+
 module.exports = {
   getAllUsers,
   getUserById,
@@ -400,5 +492,11 @@ module.exports = {
   getUserStats,
   jsonToDbRow,
   dbRowToJson,
-  ALL_FIELDS
+  ALL_FIELDS,
+  getUserCustomFields,
+  setUserCustomField,
+  deleteUserCustomField,
+  deleteUserCustomFields,
+  searchUsersByCustomField,
+  getAllCustomFields
 };

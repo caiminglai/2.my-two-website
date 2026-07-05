@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import { Shield, Heart, Users, Sparkles } from 'lucide-react';
 import { loadRows, deleteRow, loadColumns, addColumn } from '../services/user.service';
+import { fetchFieldMappings } from '../services/field-mapping.service';
 import { matchRows } from '../services/match.service';
 import type { Column, MatchCondition, Row } from '../data/types';
 import { API_BASE_URL } from '../api/config';
@@ -23,6 +24,20 @@ export default function Home() {
   const [selectedPurpose, setSelectedPurpose] = useState<string>('');
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
+  // 从后端拉取字段中文映射表，动态更新列定义（API不可用时回退到本地默认值）
+  useEffect(() => {
+    fetchFieldMappings().then(apiColumns => {
+      setColumns(prev => {
+        // 保留用户自定义字段（category === 'custom'），标准字段用API返回的
+        const customCols = prev.filter(c => c.category === 'custom');
+        // 合并：API标准字段 + 用户自定义字段
+        const merged = [...apiColumns, ...customCols];
+        localStorage.setItem('match_columns', JSON.stringify(merged));
+        return merged;
+      });
+    }).catch(() => {});
+  }, []);
+
   // 分页相关状态（必须在 loadUsers 函数之前定义）
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 50; // 每页50条
@@ -42,10 +57,35 @@ export default function Home() {
     setError(null);
 
     try {
-      const res = await fetch(`${API_BASE_URL}/users?page=1&limit=1000`);
-      const data = await res.json();
-      if (data.success && data.data) {
-        setRows(data.data);
+      const [usersRes, cfRes] = await Promise.all([
+        fetch(`${API_BASE_URL}/users?page=1&limit=1000`),
+        fetch(`${API_BASE_URL}/users/all-custom-fields`).catch(() => null),
+      ]);
+      const usersData = await usersRes.json();
+      if (usersData.success && usersData.data) {
+        let rows = usersData.data;
+
+        // 合并自定义字段到行数据
+        if (cfRes && cfRes.ok) {
+          const cfData = await cfRes.json();
+          if (cfData.success && Array.isArray(cfData.data)) {
+            // 构建 user_id → {field_key: field_value} 映射
+            const cfMap: Record<string, Record<string, string>> = {};
+            for (const cf of cfData.data) {
+              if (!cfMap[cf.user_id]) cfMap[cf.user_id] = {};
+              cfMap[cf.user_id][cf.field_key] = cf.field_value;
+            }
+            // 合并到每行的 data 中
+            rows = rows.map((row: any) => {
+              if (row.user_id && cfMap[row.user_id]) {
+                return { ...row, data: { ...row.data, ...cfMap[row.user_id] } };
+              }
+              return row;
+            });
+          }
+        }
+
+        setRows(rows);
       } else {
         setError('加载数据失败');
       }
@@ -505,6 +545,18 @@ export default function Home() {
           activeSearchExact={activeSearchExact}
           onSearch={handleSearch}
           onResetSearch={handleResetSearch}
+          userCustomFieldKeys={(() => {
+            const stdKeys = new Set(columns.map(c => c.key));
+            const cfKeys = new Set<string>();
+            for (const row of rows) {
+              if (row.data) {
+                for (const k of Object.keys(row.data)) {
+                  if (!stdKeys.has(k)) cfKeys.add(k);
+                }
+              }
+            }
+            return Array.from(cfKeys);
+          })()}
         />
 
         <p className="text-xs mb-6 px-1" style={{ color: '#D4C8B8' }}>

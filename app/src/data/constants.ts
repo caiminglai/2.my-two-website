@@ -54,6 +54,24 @@ export const MUSIC_OPTIONS = [
 
 export const PURPOSE_OPTIONS = ['相亲交友', '拓展圈子', '兴趣交流', '运动伙伴', '学习搭子', '同城活动', '寻找知己', '人生伴侣', '恋爱结婚', '先交朋友', '找个伴', '同城约会', '周末玩伴', '一起旅行', '一起运动', '一起学习', '一起吃饭', '一起看电影', '一起打游戏', '一起健身'];
 
+// ===== 扩展字段选项（与 field_mappings 表同步） =====
+export const RELATIONSHIP_STATUS_OPTIONS = ['单身', '暧昧中', '恋爱中', '已婚', '离异', '丧偶', '不想透露'];
+export const HAIRSTYLE_OPTIONS = ['长发', '短发', '中长发', '卷发', '直发', '马尾', '丸子头', '寸头', '光头', '其他'];
+export const GLASSES_OPTIONS = ['不戴', '近视镜', '隐形眼镜', '墨镜', '其他'];
+export const ATTACHMENT_STYLE_OPTIONS = ['安全型', '焦虑型', '回避型', '混乱型'];
+export const LOVE_LANGUAGE_OPTIONS = ['肯定的言辞', '精心的时刻', '接受礼物', '服务的行动', '身体的接触'];
+export const WANT_CHILDREN_OPTIONS = ['想要', '不想要', '还没想好', '随缘'];
+export const SLEEP_SCHEDULE_OPTIONS = ['早睡早起', '晚睡晚起', '不规律', '看情况'];
+export const SOCIAL_FREQUENCY_OPTIONS = ['宅家派', '偶尔出门', '社交达人', '看心情'];
+export const MOST_VALUES_OPTIONS = ['颜值', '才华', '经济条件', '性格', '三观', '家庭背景', '共同语言', '幽默感'];
+export const GAME_PREFERENCE_OPTIONS = ['手游', '端游', '主机游戏', '桌游', '派对游戏', '不玩游戏'];
+export const SOCIAL_APPS_OPTIONS = ['微信', 'QQ', '微博', '小红书', '抖音', 'B站', '知乎', '豆瓣', 'Instagram', 'Twitter', '其他'];
+export const SPENDING_HABITS_OPTIONS = ['节俭型', '理性消费', '享受型', '月光族', '投资型'];
+export const TRAVEL_FREQUENCY_OPTIONS = ['经常旅行', '偶尔旅行', '很少旅行', '宅家不出门'];
+export const MUSIC_PLATFORM_OPTIONS = ['网易云音乐', 'QQ音乐', '酷狗音乐', 'Apple Music', 'Spotify', 'YouTube Music', '其他'];
+export const SHOW_PREFERENCE_OPTIONS = ['国产剧', '美剧', '韩剧', '日剧', '泰剧', '动漫', '纪录片', '综艺', '电影', '不怎么看'];
+export const READING_PREFERENCE_OPTIONS = ['小说', '社科', '科技', '历史', '哲学', '漫画', '杂志', '不怎么看'];
+
 // 字段标签映射
 export const FIELD_LABELS: Record<string, string> = {
   name: '昵称', gender: '性别', age: '年龄', height: '身高', weight: '体重',

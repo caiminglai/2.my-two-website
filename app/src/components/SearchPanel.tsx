@@ -1,9 +1,9 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import {
   Search, X, ChevronDown, Plus, Trash2, Heart,
   Users, Sparkles, Target, Users2, User, MapPin, Check,
 } from 'lucide-react';
-import { CATEGORIES, FIELD_LABELS, PURPOSE_OPTIONS } from '../data/constants';
+import { CATEGORIES, PURPOSE_OPTIONS } from '../data/constants';
 import type { Column, MatchCondition } from '../data/types';
 import { API_BASE_URL } from '../api/config';
 
@@ -72,6 +72,7 @@ interface SearchPanelProps {
   activeSearchExact: boolean;
   onSearch: () => void;
   onResetSearch: () => void;
+  userCustomFieldKeys?: string[];
 }
 
 export default function SearchPanel({
@@ -91,6 +92,7 @@ export default function SearchPanel({
   activeSearchExact,
   onSearch,
   onResetSearch,
+  userCustomFieldKeys = [],
 }: SearchPanelProps) {
   const [showCustomFilter, setShowCustomFilter] = useState(false);
   const [customFieldKey, setCustomFieldKey] = useState('');
@@ -99,6 +101,15 @@ export default function SearchPanel({
   const [showFieldDrop, setShowFieldDrop] = useState<number | null>(null);
   const [showValueDrop, setShowValueDrop] = useState<number | null>(null);
   const dropRef = useRef<HTMLDivElement>(null);
+
+  // 从 columns 动态构建字段标签映射表（替代硬编码 labelMap）
+  const labelMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const col of columns) {
+      map[col.key] = col.label;
+    }
+    return map;
+  }, [columns]);
 
   // 从后端加载管理员定义的常用自定义字段
   useEffect(() => {
@@ -381,7 +392,7 @@ export default function SearchPanel({
                   <button onClick={() => setShowFieldDrop(showFieldDrop === i ? null : i)}
                     className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm"
                     style={{ background: '#F5EDE3', border: '1px solid #E8DED0', color: '#3D2E20' }}>
-                    <span>{FIELD_LABELS[cond.column] || colInfo?.label || '选择字段'}</span>
+                    <span>{labelMap[cond.column] || colInfo?.label || (cond.column || '选择字段')}</span>
                     <ChevronDown size={13} style={{ color: '#B5A698' }} />
                   </button>
                   {showFieldDrop === i && (
@@ -400,7 +411,7 @@ export default function SearchPanel({
                                 setShowValueDrop(col.options && col.options.length > 0 ? i : null);
                               }}>
 
-                              {FIELD_LABELS[col.key] || col.label}
+                              {labelMap[col.key] || col.label}
                             </button>
                           ))}
                         </div>
@@ -422,6 +433,28 @@ export default function SearchPanel({
                           ))}
                         </div>
                       )}
+                      {(() => {
+                        // 只显示在 field_mappings 中有定义、但不在前端固定列中的字段
+                        const fixedKeys = new Set(['purpose','name','gender','age','height','weight','city','skinTone','faceType','eyeType','mouthType','bodyType','zodiac','bloodType','marriage','children','education','job','income','house','car','personality','smoke','drink','religion','pet','hobbies','food','sport','music','interestTags','expectation','contact']);
+                        const customCols = columns.filter(c => !fixedKeys.has(c.key));
+                        return customCols.length > 0 ? (
+                          <div>
+                            <div className="px-3 py-1 text-xs font-medium" style={{ color: '#5BA4B5' }}>用户自定义标签</div>
+                            {customCols.map(col => (
+                              <button key={col.key}
+                                className="block w-full text-left px-3 py-1.5 text-sm hover:bg-blue-50 transition-colors"
+                                style={{ color: '#3D2E20' }}
+                                onClick={() => {
+                                  onConditionsChange(conditions.map((c, idx) => idx === i ? { ...c, column: col.key, value: '' } : c));
+                                  setShowFieldDrop(null);
+                                  setShowValueDrop(col.options && col.options.length > 0 ? i : null);
+                                }}>
+                                {col.label}
+                              </button>
+                            ))}
+                          </div>
+                        ) : null;
+                      })()}
                     </div>
                   )}
                 </div>
@@ -434,14 +467,14 @@ export default function SearchPanel({
                       onClick={() => setShowValueDrop(showValueDrop === i ? null : i)}
                       className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm text-left"
                       style={{ background: '#F5EDE3', border: '1px solid #E8DED0', color: cond.value ? '#3D2E20' : '#8B7B6B', outline: 'none' }}>
-                      <span>{cond.value || `选择${FIELD_LABELS[cond.column] || colInfo?.label || ''}`}</span>
+                      <span>{cond.value || `选择${labelMap[cond.column] || colInfo?.label || ''}`}</span>
                       <ChevronDown size={13} style={{ color: '#B5A698' }} />
                     </button>
                   ) : cond.column ? (
                     <input
                       className="w-full px-3 py-2 rounded-lg text-sm"
                       style={{ background: '#F5EDE3', border: '1px solid #E8DED0', color: '#3D2E20', outline: 'none' }}
-                      placeholder={`输入${FIELD_LABELS[cond.column] || colInfo?.label || '关键词'}`}
+                      placeholder={`输入${labelMap[cond.column] || colInfo?.label || '关键词'}`}
                       value={cond.value}
                       onFocus={e => (e.target.style.borderColor = '#F5B8A4')}
                       onBlur={e => (e.target.style.borderColor = '#E8DED0')}

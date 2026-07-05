@@ -117,7 +117,10 @@ function getUserDetail(id, isAdmin = false) {
 function getMyUser(userId) {
   if (!userId) return null;
   const users = userDb.getUsersByUserId(userId);
-  return users.length > 0 ? users[0] : null;
+  if (users.length === 0) return null;
+  const user = users[0];
+  user.custom_fields = userDb.getUserCustomFields(userId);
+  return user;
 }
 
 // ========== 用户创建 / 更新 ==========

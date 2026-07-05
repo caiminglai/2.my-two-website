@@ -1,15 +1,25 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { User, Camera, Save, LogOut, ArrowLeft, Star, Edit2, ChevronRight, Settings, Trash2 } from 'lucide-react';
+import { User, Camera, Save, LogOut, ArrowLeft, Star, Edit2, ChevronRight, Settings, Trash2, Plus, X as XIcon } from 'lucide-react';
 import { API_BASE_URL, normalizeAvatarUrl } from '../api/config';
 import { handleApiError } from '../utils/errorHandler';
 import { loadColumns } from '../services/user.service';
+import { fetchFieldMappings } from '../services/field-mapping.service';
 import { DEPOSIT_RULES } from '../data/constants';
 import type { Column, Row } from '../data/types';
 
 export default function ProfilePage() {
   const navigate = useNavigate();
-  const columns = loadColumns();
+  const [columns, setColumns] = useState<Column[]>(loadColumns);
+  // 从后端拉取字段映射，统一数据源（API 不可用时保留本地默认值）
+  useEffect(() => {
+    fetchFieldMappings().then(apiCols => {
+      setColumns(prev => {
+        const customCols = prev.filter(c => c.category === 'custom');
+        return [...apiCols, ...customCols];
+      });
+    }).catch(() => {});
+  }, []);
   const [userData, setUserData] = useState<Row | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [formData, setFormData] = useState<Record<string, string>>({});
@@ -18,6 +28,10 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [customFields, setCustomFields] = useState<{field_key: string; field_value: string}[]>([]);
+  const [newFieldKey, setNewFieldKey] = useState('');
+  const [newFieldValue, setNewFieldValue] = useState('');
+  const [showAddField, setShowAddField] = useState(false);
 
   const userId = localStorage.getItem('user_id');
   const userNickname = localStorage.getItem('user_nickname');
@@ -49,6 +63,12 @@ export default function ProfilePage() {
             }
           });
           setSelectedTags(tags);
+          if (Array.isArray(data.user.custom_fields)) {
+            setCustomFields(data.user.custom_fields.map((f: any) => ({
+              field_key: f.field_key,
+              field_value: f.field_value,
+            })));
+          }
         }
       } else {
         handleApiError(new Error('加载失败'), '获取个人信息失败');
@@ -126,6 +146,71 @@ export default function ProfilePage() {
       const cur = p[key] || [];
       return { ...p, [key]: cur.includes(tag) ? cur.filter(t => t !== tag) : [...cur, tag] };
     });
+  };
+
+  const addCustomField = async () => {
+    if (!newFieldKey.trim() || !newFieldValue.trim()) {
+      alert('请填写标签名和标签值');
+      return;
+    }
+    try {
+      const res = await fetch(`${API_BASE_URL}/users/custom-fields`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
+        },
+        body: JSON.stringify({ field_key: newFieldKey.trim(), field_value: newFieldValue.trim() }),
+      });
+      if (res.ok) {
+        setCustomFields(prev => {
+          const filtered = prev.filter(f => f.field_key !== newFieldKey.trim());
+          return [...filtered, { field_key: newFieldKey.trim(), field_value: newFieldValue.trim() }];
+        });
+        setNewFieldKey('');
+        setNewFieldValue('');
+        setShowAddField(false);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        alert(data.message || '添加失败');
+      }
+    } catch {
+      alert('网络错误');
+    }
+  };
+
+  const deleteCustomField = async (fieldKey: string) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/users/custom-fields/${encodeURIComponent(fieldKey)}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${authToken}` },
+      });
+      if (res.ok) {
+        setCustomFields(prev => prev.filter(f => f.field_key !== fieldKey));
+      } else {
+        alert('删除失败');
+      }
+    } catch {
+      alert('网络错误');
+    }
+  };
+
+  const updateCustomFieldValue = async (fieldKey: string, newValue: string) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/users/custom-fields`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
+        },
+        body: JSON.stringify({ field_key: fieldKey, field_value: newValue }),
+      });
+      if (res.ok) {
+        setCustomFields(prev => prev.map(f => f.field_key === fieldKey ? { ...f, field_value: newValue } : f));
+      }
+    } catch {
+      alert('网络错误');
+    }
   };
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -368,6 +453,54 @@ export default function ProfilePage() {
                   );
                 })}
 
+                {/* 自定义标签管理 */}
+                <div className="rounded-xl p-4 mt-2" style={{ background: 'rgba(107,175,125,0.04)', border: '1px solid rgba(107,175,125,0.15)' }}>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs font-medium" style={{ color: '#6BAF7D' }}>我的自定义标签</span>
+                    <button onClick={() => setShowAddField(!showAddField)} className="flex items-center gap-1 text-xs px-2 py-1 rounded-lg" style={{ color: '#6BAF7D', border: '1px solid rgba(107,175,125,0.2)' }}>
+                      <Plus size={10} /> 添加
+                    </button>
+                  </div>
+
+                  {customFields.length > 0 && (
+                    <div className="space-y-2 mb-3">
+                      {customFields.map(cf => (
+                        <div key={cf.field_key} className="flex items-center gap-2">
+                          <span className="text-xs px-2 py-1 rounded-md" style={{ background: 'rgba(107,175,125,0.08)', color: '#6BAF7D' }}>{cf.field_key}</span>
+                          <input
+                            className="flex-1 px-2 py-1 rounded-lg text-xs"
+                            style={{ background: '#F5EDE3', border: '1px solid #E8DED0', color: '#3D2E20', outline: 'none' }}
+                            value={cf.field_value}
+                            onChange={e => {
+                              setCustomFields(prev => prev.map(f => f.field_key === cf.field_key ? { ...f, field_value: e.target.value } : f));
+                            }}
+                            onBlur={e => {
+                              if (e.target.value !== cf.field_value) {
+                                updateCustomFieldValue(cf.field_key, e.target.value);
+                              }
+                            }}
+                          />
+                          <button onClick={() => deleteCustomField(cf.field_key)} className="p-1 rounded" style={{ color: '#D4856A' }}>
+                            <XIcon size={12} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {customFields.length === 0 && !showAddField && (
+                    <p className="text-xs mb-3" style={{ color: '#B5A698' }}>还没有自定义标签，点击"添加"创建</p>
+                  )}
+
+                  {showAddField && (
+                    <div className="flex items-center gap-2">
+                      <input className="flex-1 px-2 py-1.5 rounded-lg text-xs" style={{ background: '#F5EDE3', border: '1px solid #E8DED0', color: '#3D2E20', outline: 'none' }} placeholder="标签名（如：最爱颜色）" value={newFieldKey} onChange={e => setNewFieldKey(e.target.value)} />
+                      <input className="flex-1 px-2 py-1.5 rounded-lg text-xs" style={{ background: '#F5EDE3', border: '1px solid #E8DED0', color: '#3D2E20', outline: 'none' }} placeholder="标签值（如：蓝色）" value={newFieldValue} onChange={e => setNewFieldValue(e.target.value)} />
+                      <button onClick={addCustomField} className="text-xs px-3 py-1.5 rounded-lg text-white" style={{ background: 'linear-gradient(135deg, #6BAF7D, #4D945F)' }}>确定</button>
+                    </div>
+                  )}
+                </div>
+
                 <button onClick={handleSave}
                   className="w-full py-3.5 rounded-xl text-sm font-medium text-white mt-4"
                   style={{ background: 'linear-gradient(135deg, #E87A5D, #D96A4D)', boxShadow: '0 2px 12px rgba(232,122,93,0.2)' }}>
@@ -390,6 +523,19 @@ export default function ProfilePage() {
                       </div>
                     );
                   })}
+                  {customFields.length > 0 && (
+                    <>
+                      <div className="py-2 mt-1" style={{ borderTop: '1px solid #F0E4D4' }}>
+                        <span className="text-xs font-medium" style={{ color: '#6BAF7D' }}>自定义标签</span>
+                      </div>
+                      {customFields.map(cf => (
+                        <div key={cf.field_key} className="flex items-center justify-between py-2" style={{ borderBottom: '1px solid #F0E4D4' }}>
+                          <span className="text-xs" style={{ color: '#B5A698' }}>{cf.field_key}</span>
+                          <span className="text-sm" style={{ color: '#3D2E20' }}>{cf.field_value}</span>
+                        </div>
+                      ))}
+                    </>
+                  )}
                 </div>
               </div>
             )}

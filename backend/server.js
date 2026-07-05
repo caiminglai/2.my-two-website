@@ -9,6 +9,7 @@ const dbIndex = require('./db/index.js');
 const paymentsDb = require('./db/payments.js');
 const userDb = require('./db/users.js');
 const adminDb = require('./db/admin.js');
+const fieldMappingsDb = require('./db/field-mappings.js');
 const csrfService = require('./services/csrf.service.js');
 const adminService = require('./services/admin.service.js');
 const { applySecurity } = require('./middleware/安全');
@@ -467,6 +468,64 @@ const server = http.createServer((req, res) => {
   if (req.method === 'GET' && pathname === '/api/users/search') {
     userRoutes.searchUsers(req, res, parsedUrl); return;
   }
+
+  // --- 用户自定义字段（EAV 键值表） ---
+  if (pathname === '/api/users/custom-fields' || /^\/api\/users\/custom-fields\/[^\/]+$/.test(pathname)) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      res.writeHead(401, {'Content-Type': 'application/json; charset=utf-8'});
+      res.end(JSON.stringify({success: false, message: '请先登录'})); return;
+    }
+    const token = authHeader.slice(7);
+    const userId = dbIndex.verifyToken(token);
+    if (!userId) {
+      res.writeHead(401, {'Content-Type': 'application/json; charset=utf-8'});
+      res.end(JSON.stringify({success: false, message: 'token无效'})); return;
+    }
+
+    if (req.method === 'GET' && pathname === '/api/users/custom-fields') {
+      const fields = userDb.getUserCustomFields(userId);
+      res.writeHead(200, {'Content-Type': 'application/json; charset=utf-8'});
+      res.end(JSON.stringify({success: true, data: fields})); return;
+    }
+
+    if (req.method === 'POST' && pathname === '/api/users/custom-fields') {
+      readBodyWithLimit(req).then(body => {
+        try {
+          const data = JSON.parse(body);
+          if (!data.field_key || data.field_value === undefined || data.field_value === null) {
+            res.writeHead(400, {'Content-Type': 'application/json; charset=utf-8'});
+            res.end(JSON.stringify({success: false, message: '字段名和字段值必填'})); return;
+          }
+          const result = userDb.setUserCustomField(userId, data.field_key, data.field_value);
+          res.writeHead(200, {'Content-Type': 'application/json; charset=utf-8'});
+          res.end(JSON.stringify({success: true, data: result}));
+        } catch (err) {
+          res.writeHead(500, {'Content-Type': 'application/json; charset=utf-8'});
+          res.end(JSON.stringify({success: false, message: err.message}));
+        }
+      }).catch(e => {
+        res.writeHead(400, {'Content-Type': 'application/json; charset=utf-8'});
+        res.end(JSON.stringify({success: false, message: e.message}));
+      });
+      return;
+    }
+
+    if (req.method === 'DELETE' && /^\/api\/users\/custom-fields\/[^\/]+$/.test(pathname)) {
+      const fieldKey = decodeURIComponent(pathname.split('/').pop());
+      const deleted = userDb.deleteUserCustomField(userId, fieldKey);
+      res.writeHead(200, {'Content-Type': 'application/json; charset=utf-8'});
+      res.end(JSON.stringify({success: deleted, message: deleted ? '删除成功' : '未找到'})); return;
+    }
+  }
+
+  // --- 批量获取所有用户自定义字段（公开接口，前端搜索用） ---
+  if (req.method === 'GET' && pathname === '/api/users/all-custom-fields') {
+    const allFields = userDb.getAllCustomFields();
+    res.writeHead(200, {'Content-Type': 'application/json; charset=utf-8'});
+    res.end(JSON.stringify({success: true, data: allFields})); return;
+  }
+
   // 带ID的用户路由
   if (req.method === 'PUT' && /^\/api\/users\/[^\/]+$/.test(pathname)) {
     userRoutes.editUser(req, res, readBodyWithLimit, checkAdminAuth, pathname); return;
@@ -565,6 +624,42 @@ const server = http.createServer((req, res) => {
   }
   if (req.method === 'GET' && pathname === '/api/payment/status') {
     paymentRoutes.queryPaymentStatus(req, res, parsedUrl); return;
+  }
+
+  // --- 字段中文映射表（前端动态获取字段定义，支持 ETag 缓存） ---
+  if (req.method === 'GET' && pathname === '/api/field-mappings') {
+    try {
+      const version = fieldMappingsDb.getCacheVersion();
+      if (req.headers['if-none-match'] === version) {
+        res.writeHead(304); res.end(); return;
+      }
+      const mappings = fieldMappingsDb.getAllFieldMappings();
+      res.writeHead(200, {
+        'Content-Type': 'application/json; charset=utf-8',
+        'ETag': version
+      });
+      res.end(JSON.stringify({success: true, data: mappings})); return;
+    } catch (err) {
+      res.writeHead(500, {'Content-Type': 'application/json; charset=utf-8'});
+      res.end(JSON.stringify({success: false, message: err.message})); return;
+    }
+  }
+  if (req.method === 'GET' && pathname === '/api/field-mappings/labels') {
+    try {
+      const version = fieldMappingsDb.getCacheVersion();
+      if (req.headers['if-none-match'] === version) {
+        res.writeHead(304); res.end(); return;
+      }
+      const labelMap = fieldMappingsDb.getFieldLabelMap();
+      res.writeHead(200, {
+        'Content-Type': 'application/json; charset=utf-8',
+        'ETag': version
+      });
+      res.end(JSON.stringify({success: true, data: labelMap})); return;
+    } catch (err) {
+      res.writeHead(500, {'Content-Type': 'application/json; charset=utf-8'});
+      res.end(JSON.stringify({success: false, message: err.message})); return;
+    }
   }
 
   // --- 自定义筛选字段 ---

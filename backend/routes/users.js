@@ -328,6 +328,11 @@ function searchUsers(req, res, parsedUrl) {
       criteria[key] = userService.sanitizeString(value);
     }
   }
+  // 自定义字段：前端以 JSON 字符串传递，需解析为数组
+  if (typeof criteria.custom_fields === 'string') {
+    try { criteria.custom_fields = JSON.parse(criteria.custom_fields); }
+    catch { criteria.custom_fields = []; }
+  }
   const page = parseInt(criteria.page) || 1;
   const limit = Math.min(parseInt(criteria.limit) || 20, 100);
   const result = userService.searchUsers(criteria, page, limit, false);
