@@ -5,6 +5,7 @@
 // ============================================================
 
 const userDb = require('../db/users');
+const authDb = require('../db/auth');
 const { verifyToken, generateToken } = require('../db/index');
 
 // ========== 脱敏工具（业务规则：联系方式需要脱敏后返回给前端） ==========
@@ -73,7 +74,7 @@ function registerUser(phone, password, nickname) {
   if (!phone || !password) {
     return { success: false, message: '缺少手机号或密码' };
   }
-  const userId = userDb.createAuthUser(phone, password, nickname);
+  const userId = authDb.createAuthUser(phone, password, nickname);
   const token = generateToken(userId);
   return {
     success: true,
@@ -83,7 +84,7 @@ function registerUser(phone, password, nickname) {
 }
 
 function loginUser(phone, password) {
-  const user = userDb.verifyAuthUser(phone, password);
+  const user = authDb.verifyAuthUser(phone, password);
   if (!user) {
     return { success: false, message: '手机号或密码错误' };
   }

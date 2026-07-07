@@ -36,15 +36,7 @@ function generateNonceStr(length = 32) {
 }
 
 function generateOrderId() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  const hour = String(now.getHours()).padStart(2, '0');
-  const min = String(now.getMinutes()).padStart(2, '0');
-  const sec = String(now.getSeconds()).padStart(2, '0');
-  const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-  return 'PAY' + year + month + day + hour + min + sec + random;
+  return 'PAY-' + crypto.randomUUID();
 }
 
 function wechatSign(params, apiKey) {
@@ -187,6 +179,25 @@ function createMockOrder(userId, amount, channel) {
 }
 
 async function mockPay(req, res, parsedUrl) {
+  // 仅开发环境可用
+  if (process.env.NODE_ENV === 'production') {
+    res.writeHead(404, {'Content-Type': 'application/json; charset=utf-8'});
+    res.end(JSON.stringify({success: false, message: 'Not Found'}));
+    return;
+  }
+  // Bearer token 认证
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    res.writeHead(401, {'Content-Type': 'application/json; charset=utf-8'});
+    res.end(JSON.stringify({success: false, message: '请先登录'}));
+    return;
+  }
+  const userId = dbIndex.verifyToken(authHeader.slice(7));
+  if (!userId) {
+    res.writeHead(401, {'Content-Type': 'application/json; charset=utf-8'});
+    res.end(JSON.stringify({success: false, message: 'token无效'}));
+    return;
+  }
   const orderId = parsedUrl.query.orderId;
   if (!orderId) {
     res.writeHead(400, {'Content-Type': 'text/html; charset=utf-8'});
@@ -197,6 +208,12 @@ async function mockPay(req, res, parsedUrl) {
   if (!order) {
     res.writeHead(404, {'Content-Type': 'text/html; charset=utf-8'});
     res.end('<h1>订单不存在</h1>');
+    return;
+  }
+  // 归属校验：只能支付自己的订单
+  if (order.user_id !== userId) {
+    res.writeHead(403, {'Content-Type': 'application/json; charset=utf-8'});
+    res.end(JSON.stringify({success: false, message: '无权操作此订单'}));
     return;
   }
   if (order.status === 'pending') {

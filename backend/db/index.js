@@ -430,7 +430,10 @@ async function verifyPassword(password, hash) {
   if (!hash) return false;
   try {
     if (hash.length === 64 && !hash.startsWith('$2b$') && !hash.startsWith('$2a$')) {
-      return crypto.createHash('sha256').update(password).digest('hex') === hash;
+      const computed = crypto.createHash('sha256').update(password).digest('hex');
+          const a = Buffer.from(computed, 'utf8');
+          const b = Buffer.from(hash, 'utf8');
+          return a.length === b.length && crypto.timingSafeEqual(a, b);
     }
     return await bcrypt.compare(password, hash);
   } catch {
@@ -446,7 +449,10 @@ function verifyPasswordSync(password, hash) {
   if (!hash) return false;
   try {
     if (hash.length === 64 && !hash.startsWith('$2b$') && !hash.startsWith('$2a$')) {
-      return crypto.createHash('sha256').update(password).digest('hex') === hash;
+      const computed = crypto.createHash('sha256').update(password).digest('hex');
+          const a = Buffer.from(computed, 'utf8');
+          const b = Buffer.from(hash, 'utf8');
+          return a.length === b.length && crypto.timingSafeEqual(a, b);
     }
     return bcrypt.compareSync(password, hash);
   } catch {

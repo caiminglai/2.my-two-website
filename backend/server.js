@@ -10,7 +10,6 @@ const paymentsDb = require('./db/payments.js');
 const userDb = require('./db/users.js');
 const adminDb = require('./db/admin.js');
 const fieldMappingsDb = require('./db/field-mappings.js');
-const csrfService = require('./services/csrf.service.js');
 const adminService = require('./services/admin.service.js');
 const { applySecurity } = require('./middleware/安全');
 const { requestLogger } = require('./middleware/日志');
@@ -419,14 +418,6 @@ const server = http.createServer((req, res) => {
     authRoutes.verifyCaptcha(req, res, readBodyWithLimit); return;
   }
   
-  if (req.method === 'GET' && pathname === '/api/auth/csrf-token') {
-    const authHeader = req.headers.authorization;
-    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
-    const userId = token ? dbIndex.verifyToken(token) : 'anonymous_' + Math.random().toString(36).substr(2, 9);
-    const csrfToken = csrfService.generateCsrfToken(userId);
-    res.writeHead(200, {'Content-Type': 'application/json; charset=utf-8'});
-    res.end(JSON.stringify({success: true, csrfToken})); return;
-  }
   // 短信验证预留接口
   if (req.method === 'POST' && pathname === '/api/auth/sms/register-code') {
     authRoutes.sendRegisterSmsCode(req, res, readBodyWithLimit); return;
