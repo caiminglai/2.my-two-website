@@ -7,15 +7,10 @@
 ```
 2.my-two-website/
 ├── app/                          # 前端应用（React + Vite）
-│   ├── config/                   # 前端配置文件
-│   │   ├── postcss.config.js     # PostCSS 配置
-│   │   ├── tailwind.config.js    # Tailwind 主题配置
-│   │   ├── tsconfig.app.json     # 应用层 TS 配置
-│   │   └── tsconfig.node.json    # Node 工具层 TS 配置
 │   ├── public/                   # 静态资源（不参与打包）
 │   ├── src/                      # 业务源代码
 │   │   ├── api/config.ts         # API 请求配置
-│   │   ├── components/           # 公共组件（14 个）
+│   │   ├── components/           # 公共组件（13 个）
 │   │   │   ├── ContactPayModal.tsx      # 联系方式支付弹窗
 │   │   │   ├── DeleteConfirmModal.tsx   # 删除确认弹窗
 │   │   │   ├── DetailModal.tsx         # 详情弹窗
@@ -30,13 +25,12 @@
 │   │   │   ├── UserDetailModal.tsx    # 用户详情弹窗
 │   │   │   └── UserList.tsx           # 用户列表
 │   │   ├── data/                 # 数据类型与常量
-│   │   ├── pages/                # 页面组件（13 个）
+│   │   ├── pages/                # 页面组件（11 个）
 │   │   ├── services/             # 业务服务层
 │   │   └── utils/                # 工具函数
 │   ├── index.html                # 入口 HTML
 │   ├── package.json
 │   ├── vite.config.ts            # Vite 构建配置
-│   ├── .eslintrc.json
 │   ├── .prettierrc
 │   └── .env.*                    # 环境变量
 │
@@ -49,14 +43,16 @@
 │   ├── __tests__/                # 单元测试
 │   │   ├── auth.test.js          # 认证测试
 │   │   └── csrf.test.js          # CSRF 测试
-│   ├── db/                       # 数据访问层（7 个文件）
+│   ├── db/                       # 数据访问层（8 个文件）
 │   ├── routes/                   # API 路由层（6 个文件）
-│   ├── services/                 # 业务逻辑层（9 个文件）
+│   ├── services/                 # 业务逻辑层（8 个文件）
+│   ├── middleware/              # 中间件
 │   ├── server.js                 # 服务器入口
-│   ├── jest.config.js
 │   ├── package.json
-│   ├── .eslintrc.json
 │   └── .prettierrc
+│
+├── data/                        # 数据库
+│   └── match.db                # SQLite 数据库
 │
 ├── uploads/                      # 用户上传文件目录
 │   ├── avatars/                  # 用户头像
@@ -99,7 +95,7 @@ backend/
 │   ├── m.html                      # 手机版管理主页
 │   └── main.html                   # 桌面版管理主页
 │
-├── db/                             # 数据访问层（纯 SQL，7 个文件）
+├── db/                             # 数据访问层（纯 SQL，8 个文件）
 │   ├── index.js                    # DB 连接 / Token / 加密 / 密码哈希
 │   ├── users.js                    # 用户表：CRUD / 搜索 / 统计 / 审核
 │   ├── auth.js                     # 账号注册 / 密码校验 / 密码修改
@@ -215,7 +211,7 @@ server: {
 | `admin_settings` | 管理设置 |
 | `admin_logs` | 管理员操作日志 |
 
-说明：原 `database.js` 已被拆分到 `db/` 目录，不再使用单一大文件。
+说明：数据库文件位于 `data/match.db`，原 `database.js` 已被拆分到 `db/` 目录，不再使用单一大文件。
 
 ---
 

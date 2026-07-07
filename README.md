@@ -29,7 +29,10 @@
 │   ├── services/           # 业务逻辑层（8 个文件）
 │   ├── admin/              # 管理后台 HTML 模板
 │   ├── server.js           # 服务器入口
-│   └── match.db            # SQLite 数据库（实际位于 data/match.db）
+
+│
+├── data/                   # 数据库
+│   └── match.db
 │
 └── uploads/                # 用户上传文件
 ```
