@@ -5,6 +5,7 @@
 // ============================================================
 
 const userService = require('../services/user.service');
+const { validateMagicBytes } = require('../utils/multipart');
 const adminService = require('../services/admin.service');
 const { verifyToken } = require('../db/index');
 
@@ -237,6 +238,11 @@ function editUser(req, res, readBodyWithLimit, checkAdminAuth, pathname) {
           }
           if (data.files.avatar.data.length > 5 * 1024 * 1024) {
             sendJson(res, 400, { success: false, message: '文件过大，最大支持5MB' });
+            return;
+          }
+          // 魔术数字校验：防止伪造扩展名的恶意文件
+          if (!validateMagicBytes(data.files.avatar.data, '.' + ext)) {
+            sendJson(res, 400, { success: false, message: '文件内容与扩展名不匹配' });
             return;
           }
           const avatarName = `${id}.${ext}`;

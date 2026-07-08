@@ -5,6 +5,7 @@
 const reportsService = require('../services/reports.service');
 const fs = require('fs');
 const path = require('path');
+const { parseMultipart, collectBody, validateMagicBytes, validateExtension } = require('../utils/multipart');
 
 function sendJson(res, statusCode, obj) {
   res.writeHead(statusCode, {'Content-Type': 'application/json; charset=utf-8'});
@@ -39,67 +40,34 @@ function addReport(req, res, readBodyWithLimit) {
     const boundary = contentType.split('boundary=')[1];
     if (!boundary) { sendJson(res, 400, { success: false, message: '无效的表单数据' }); return; }
     const MAX_SIZE = 5 * 1024 * 1024;
-    let chunks = [], size = 0;
-    req.on('data', chunk => { size += chunk.length; if (size > MAX_SIZE) { req.destroy(); return; } chunks.push(chunk); });
-    req.on('end', () => {
+    collectBody(req, MAX_SIZE).then(body => {
       try {
-        const body = Buffer.concat(chunks);
-        const boundaryBuf = Buffer.from('--' + boundary);
-        const crlf = Buffer.from('\r\n');
+        const parsed = parseMultipart(body, boundary);
         let reportedId = null, reportType = null, description = null, proofPath = null;
-        
-        let pos = 0;
-        while (pos < body.length) {
-          const boundaryStart = body.indexOf(boundaryBuf, pos);
-          if (boundaryStart === -1) break;
-          pos = boundaryStart + boundaryBuf.length;
 
-          // 检查是否为结束边界 --boundary--
-          if (body[pos] === 0x2D && body[pos + 1] === 0x2D) break;
+        // 处理文本字段
+        if (parsed.fields.reportedId) reportedId = parsed.fields.reportedId;
+        if (parsed.fields.reportType) reportType = parsed.fields.reportType;
+        if (parsed.fields.description) description = parsed.fields.description;
 
-          const headerStart = body.indexOf(crlf, pos) + 2;
-          const headerEnd = body.indexOf(Buffer.from('\r\n\r\n'), pos) + 4;
-          // 跳过无效边界，避免死循环
-          if (headerStart < 4 || headerEnd < 4) { pos = boundaryStart + 1; continue; }
-
-          const header = body.slice(headerStart, headerEnd - 4).toString('utf-8');
-
-          if (header.includes('filename=')) {
-            const fnMatch = header.match(/filename="([^"]+)"/);
-            if (fnMatch && fnMatch[1]) {
-              const ext = path.extname(fnMatch[1]);
-              const allowed = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
-              if (!allowed.includes(ext.toLowerCase())) { pos = body.indexOf(crlf, headerEnd) + 2; continue; }
-              const dataStart = headerEnd;
-              const dataEnd = body.indexOf(boundaryBuf, dataStart) - 2;
-              if (dataEnd > dataStart) {
-                const fileData = body.slice(dataStart, dataEnd);
-                const fileName = 'report_' + Date.now() + ext;
-                fs.writeFileSync(path.join(uploadsDir, fileName), fileData);
-                proofPath = '/uploads/reports/' + fileName;
-              }
-            }
-          } else {
-            const nameMatch = header.match(/name="([^"]+)"/);
-            if (nameMatch) {
-              const fieldName = nameMatch[1];
-              const valueStart = headerEnd;
-              const valueEnd = body.indexOf(crlf, valueStart);
-              if (valueEnd > valueStart) {
-                const value = body.slice(valueStart, valueEnd).toString('utf-8');
-                if (fieldName === 'reportedId') reportedId = value.trim();
-                else if (fieldName === 'reportType') reportType = value.trim();
-                else if (fieldName === 'description') description = value.trim();
-              }
-            }
+        // 处理文件
+        for (const [fieldName, file] of Object.entries(parsed.files)) {
+          const { valid, ext } = validateExtension(file.filename);
+          if (!valid) continue;
+          // 魔术数字校验
+          if (!validateMagicBytes(file.data, ext)) {
+            sendJson(res, 400, { success: false, message: '文件内容与扩展名不匹配' });
+            return;
           }
-          pos = body.indexOf(crlf, headerEnd) + 2;
+          const fileName = 'report_' + Date.now() + ext;
+          fs.writeFileSync(path.join(uploadsDir, fileName), file.data);
+          proofPath = '/uploads/reports/' + fileName;
         }
-        
+
         const result = reportsService.submitReport(token, reportedId, reportType, description, proofPath);
         sendJson(res, result.success ? 200 : 400, result);
       } catch(e) { sendJson(res, 500, { success: false, message: '举报失败' }); }
-    });
+    }).catch(() => { sendJson(res, 500, { success: false, message: '读取请求体失败' }); });
     return;
   }
 

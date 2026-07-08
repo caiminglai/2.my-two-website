@@ -79,7 +79,6 @@
         
         if (data.success && data.token) {
           localStorage.setItem('admin_token', data.token);
-          document.cookie = 'admin_token=' + data.token + ';path=/;max-age=86400;SameSite=Lax';
           window.location.href = API_BASE + '/admin/m';
         } else {
           errorMsg.textContent = data.message || '密码错误';

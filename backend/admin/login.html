@@ -70,7 +70,6 @@ document.getElementById('loginBtn').onclick=function(){
         var d=JSON.parse(xhr.responseText);
         if(d.success && d.token){
           localStorage.setItem('admin_token',d.token);
-          document.cookie='admin_token='+d.token+';path=/;max-age=86400;SameSite=Lax';
           window.location.href=BASE+'/admin/main/';
         }else{err.textContent=d.message||'密码错误呀~';}
       }else{
