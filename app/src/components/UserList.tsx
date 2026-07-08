@@ -394,10 +394,10 @@ export default function UserList({
         <div className="flex flex-col items-center gap-1.5">
           <div className="flex items-center justify-center gap-1.5">
             <Heart size={10} style={{ color: '#E87A5D', opacity: 0.5 }} fill="currentColor" />
-            <p className="text-xs" style={{ color: '#D4C8B8' }}>精准匹配 — 让每一次相遇都精准</p>
+            <p className="text-xs" style={{ color: '#D4C8B8' }}>微光亦是永恒 — 让每一次相遇都精准</p>
           </div>
           <div className="text-xs" style={{ color: '#B5A698' }}>
-            <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">your_icp_number_2</a>
+            <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">浙ICP备2026048677号-1</a>
             <span className="mx-1.5">·</span>
             <a href="https://beian.mps.gov.cn/#/query/webSearch?code=33011002019955" target="_blank" rel="noopener noreferrer">浙公网安备33011002019955号</a>
           </div>

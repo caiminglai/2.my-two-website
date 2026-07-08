@@ -57,8 +57,10 @@ export default function Home() {
     setError(null);
 
     try {
+      const authToken = localStorage.getItem('auth_token');
+      const headers: Record<string, string> = authToken ? { 'Authorization': `Bearer ${authToken}` } : {};
       const [usersRes, cfRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/users?page=1&limit=1000`),
+        fetch(`${API_BASE_URL}/users?page=1&limit=20`, { headers }),
         fetch(`${API_BASE_URL}/users/all-custom-fields`).catch(() => null),
       ]);
       const usersData = await usersRes.json();
@@ -198,7 +200,12 @@ export default function Home() {
       const isValidId = /^[a-zA-Z0-9_-]+$/.test(currentUserId) && /^[a-zA-Z0-9_-]+$/.test(showDetail);
       if (!isValidId) return;
 
-      fetch(`${API_BASE_URL}/users/${encodeURIComponent(showDetail)}/check-unlock?viewer_id=${encodeURIComponent(currentUserId)}`)
+      const authToken = localStorage.getItem('auth_token');
+      if (!authToken) return;
+
+      fetch(`${API_BASE_URL}/users/${encodeURIComponent(showDetail)}/check-unlock`, {
+        headers: { 'Authorization': `Bearer ${authToken}` }
+      })
         .then(res => res.json())
         .then(data => {
           if (data.success) {
@@ -509,11 +516,11 @@ export default function Home() {
               <Heart size={22} color="white" fill="white" />
             </div>
             <h1 className="text-3xl font-bold tracking-wide" style={{ color: '#3D2E20' }}>
-              精准匹配
+              微光亦是永恒
             </h1>
           </div>
           <p className="text-sm" style={{ color: '#9B8B7B' }}>
-            精准寻人，精准筛选。不做通讯，只让你相遇。
+            精准匹配 · 缘分从数据开始
           </p>
           <div className="flex items-center justify-center gap-3 mt-3">
             <span className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full" style={{ background: 'rgba(232,122,93,0.06)', color: '#E87A5D', border: '1px solid rgba(232,122,93,0.12)' }}>

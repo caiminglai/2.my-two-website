@@ -8,6 +8,7 @@ const userService = require('../services/user.service');
 const { validateMagicBytes } = require('../utils/multipart');
 const adminService = require('../services/admin.service');
 const { verifyToken } = require('../db/index');
+const { getAuthTokenFromCookie } = require('../utils/cookie工具');
 
 // 统一的响应工具
 function sendJson(res, statusCode, obj) {
@@ -25,13 +26,16 @@ function extractUserId(pathname) {
   return null;
 }
 
-// 从请求头获取认证信息
+// 从请求头获取认证信息（优先 Authorization header，回退 httpOnly cookie）
 function getAuthInfo(req) {
   const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return { isAdmin: false, userId: null, token: null };
+  let token = null;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.slice(7);
+  } else {
+    token = getAuthTokenFromCookie(req);
   }
-  const token = authHeader.slice(7);
+  if (!token) return { isAdmin: false, userId: null, token: null };
   const isAdmin = adminService.isAdminToken(token);
   return {
     isAdmin, userId: isAdmin ? null : verifyToken(token), token };
@@ -39,12 +43,16 @@ function getAuthInfo(req) {
 
 // ========== GET /api/users（用户列表 + keyword 搜索）
 function getUsers(req, res, _, parsedUrl) {
+  const authInfo = getAuthInfo(req);
+  // 必须登录才能查看用户列表
+  if (!authInfo.userId && !authInfo.isAdmin) {
+    sendJson(res, 401, { success: false, message: '请先登录' }); return;
+  }
+
   const page = parseInt(parsedUrl.query.page) || 1;
-  let limit = parseInt(parsedUrl.query.limit) || 200;
+  let limit = parseInt(parsedUrl.query.limit) || 20;
   const keyword = parsedUrl.query.keyword;
   const exact = parsedUrl.query.exact;
-
-  const authInfo = getAuthInfo(req);
 
   let result, total;
 
@@ -56,8 +64,8 @@ function getUsers(req, res, _, parsedUrl) {
   } else {
     if (authInfo.isAdmin) {
       limit = 10000;
-    } else if (limit > 1000) {
-      limit = 1000;
+    } else if (limit > 50) {
+      limit = 50;
     }
     result = userService.getUserList(page, limit, authInfo.isAdmin);
     total = userService.getUserStats().total;

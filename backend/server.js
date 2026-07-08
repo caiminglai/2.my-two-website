@@ -14,6 +14,7 @@ const adminService = require('./services/admin.service.js');
 const { applySecurity } = require('./middleware/安全');
 const { requestLogger } = require('./middleware/日志');
 const { parseMultipart, collectBody, validateMagicBytes, validateExtension } = require('./utils/multipart');
+const { getAuthTokenFromCookie } = require('./utils/cookie工具');
 
 // ========== 管理员安全配置 ==========
 // 管理员密码由 admin.service.js 管理，优先从环境变量读取，其次从数据库读取
@@ -146,6 +147,12 @@ const server = http.createServer((req, res) => {
   // ===== 中间件 =====
   applySecurity(req, res);
   requestLogger(req, res);
+
+  // Cookie → Authorization 桥接（让所有路由自动支持 httpOnly cookie 认证）
+  if (!req.headers.authorization) {
+    const cookieToken = getAuthTokenFromCookie(req);
+    if (cookieToken) req.headers.authorization = 'Bearer ' + cookieToken;
+  }
 
   const origin = req.headers.origin || '';
   const allowOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : '';

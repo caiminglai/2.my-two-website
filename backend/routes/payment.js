@@ -132,7 +132,6 @@ function handleAlipayNotify(params) {
   const sign = params.sign;
   delete params.sign;
   delete params.sign_type;
-  const calculatedSign = alipaySign(params, alipayConfig.privateKey);
   const verify = crypto.createVerify('RSA-SHA256');
   const stringToVerify = Object.keys(params).sort().filter(key => params[key] !== '' && params[key] !== undefined).map(key => key + '=' + params[key]).join('&');
   verify.update(stringToVerify);

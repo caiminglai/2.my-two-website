@@ -7,6 +7,7 @@ const adminService = require('../services/admin.service');
 const captchaService = require('../services/captcha.service');
 const smsService = require('../services/sms.service');
 const { generateAdminToken } = require('../db/index');
+const { setAuthCookie } = require('../utils/cookie工具');
 
 function sendJson(res, statusCode, obj) {
   res.writeHead(statusCode, {'Content-Type': 'application/json; charset=utf-8'});
@@ -27,6 +28,7 @@ function register(req, res, readBodyWithLimit, checkRegisterRateLimit, clientIp)
         return;
       }
       const result = authService.register(data.phone, data.password, data.nickname);
+      if (result.success) setAuthCookie(res, result.token);
       sendJson(res, result.success ? 200 : 400, result);
     } catch (e) {
       sendJson(res, 500, { success: false, message: '注册失败' });
@@ -47,6 +49,7 @@ function login(req, res, readBodyWithLimit, checkLoginRateLimit) {
     try {
       const data = JSON.parse(body);
       const result = authService.login(data.phone, data.password);
+      if (result.success) setAuthCookie(res, result.token);
       sendJson(res, result.success ? 200 : 401, result);
     } catch (e) {
       sendJson(res, 400, { success: false, message: '登录失败' });

@@ -92,9 +92,13 @@ export function loadRows(): Row[] {
 export function saveRows(rows: Row[]) {
   localStorage.setItem(LS_ROWS, JSON.stringify(rows));
   try {
+    const authToken = localStorage.getItem('auth_token');
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
     fetch(`${API_BASE_URL}/users/batch`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
+      credentials: 'include',
       body: JSON.stringify(rows)
     });
   } catch (e) { /* ignored */ }
@@ -102,7 +106,13 @@ export function saveRows(rows: Row[]) {
 
 export async function syncRowsFromServer(): Promise<Row[]> {
   try {
-    const res = await fetch(`${API_BASE_URL}${API_ENDPOINTS.users}`);
+    const authToken = localStorage.getItem('auth_token');
+    const headers: Record<string, string> = {};
+    if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+    const res = await fetch(`${API_BASE_URL}${API_ENDPOINTS.users}`, {
+      headers,
+      credentials: 'include',
+    });
     const data = await res.json();
     if (data.success && data.data) {
       const cleaned = data.data.map((row: any) => {

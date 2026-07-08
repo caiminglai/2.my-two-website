@@ -123,7 +123,7 @@ export default function LoginPage() {
             {isLogin ? '欢迎回来' : '加入我们'}
           </h1>
           <p className="text-sm mt-2" style={{ color: '#8B7B6B' }}>
-            {isLogin ? '登录后享受更多功能' : '创建账户，开始精准匹配'}
+            {isLogin ? '登录后享受更多功能' : '创建账户，加入微光亦是永恒'}
           </p>
         </div>
 

@@ -160,8 +160,16 @@ function checkUnlock(req, res, pathname, query) {
   if (!targetId) {
     sendJson(res, 400, { success: false, message: '缺少目标用户ID' }); return;
   }
-  const viewerId = query.viewer_id || '';
-  const unlocked = paymentsDb.checkContactUnlocked(viewerId, targetId);
+  // 从 Bearer token 获取 viewerId，防止未认证遍历联系方式
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    sendJson(res, 401, { success: false, message: '请先登录' }); return;
+  }
+  const viewerId = dbIndex.verifyToken(authHeader.slice(7));
+  if (!viewerId) {
+    sendJson(res, 401, { success: false, message: 'token无效' }); return;
+  }
+  const unlocked = paymentsDb.checkContactUnlocked(String(viewerId), targetId);
   let targetContact = null;
   if (unlocked) {
     const database = dbIndex.getDb();

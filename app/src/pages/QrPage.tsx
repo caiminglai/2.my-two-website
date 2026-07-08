@@ -54,13 +54,13 @@ export default function QrPage() {
     ctx.fillStyle = '#FFFFFF';
     ctx.font = 'bold 20px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('精准匹配', 180, 30);
+    ctx.fillText('微光亦是永恒', 180, 30);
 
     // Subtitle
     ctx.fillStyle = '#8B7B6B';
     ctx.font = '14px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('男女相亲 · 精准筛选 · 保证金保障', 180, 105);
+    ctx.fillText('精准匹配 · 缘分从数据开始', 180, 105);
 
     // Divider
     ctx.strokeStyle = '#F0E4D4';
@@ -157,7 +157,7 @@ export default function QrPage() {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const link = document.createElement('a');
-    link.download = '精准匹配-海报.png';
+    link.download = '微光亦是永恒-海报.png';
     link.href = canvas.toDataURL('image/png');
     link.click();
   };

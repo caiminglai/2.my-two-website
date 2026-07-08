@@ -417,9 +417,17 @@ function initTables() {
 
 // ========== Token 与加密工具（纯函数，无状态变更） ==========
 
-const _tokenSeed = process.env.TOKEN_SECRET || process.env.ADMIN_PASSWORD || 'default';
-const TOKEN_SECRET = process.env.TOKEN_SECRET || crypto.createHash('sha256').update('match-platform-secret-key-' + _tokenSeed).digest('hex');
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || crypto.createHash('sha256').update('contact-encryption-key-' + _tokenSeed).digest();
+const _isProd = process.env.NODE_ENV === 'production';
+const TOKEN_SECRET = process.env.TOKEN_SECRET || (
+  _isProd
+    ? (() => { throw new Error('生产环境必须设置 TOKEN_SECRET 环境变量'); })()
+    : crypto.createHash('sha256').update('dev-only-' + crypto.randomBytes(16).toString('hex')).digest('hex')
+);
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || (
+  _isProd
+    ? (() => { throw new Error('生产环境必须设置 ENCRYPTION_KEY 环境变量'); })()
+    : crypto.createHash('sha256').update('dev-only-' + crypto.randomBytes(16).toString('hex')).digest()
+);
 const IV_LENGTH = 16;
 
 async function hashPassword(password) {
