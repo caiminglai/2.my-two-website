@@ -2495,6 +2495,18 @@ window.addEventListener('load',function(){
 });
 
 function logout(){localStorage.removeItem('admin_token');document.cookie='admin_token=;path=/;max-age=0';window.location.href=BASE+'/admin/';}
+// 页面加载时校验 token 有效性，过期则跳转登录页
+(function(){
+  var token=localStorage.getItem('admin_token');
+  if(!token){window.location.href=BASE+'/admin/';return;}
+  try{
+    var decoded=atob(token);
+    var parts=decoded.split(':');
+    if(parts.length<5){localStorage.removeItem('admin_token');window.location.href=BASE+'/admin/';return;}
+    var timestamp=parseInt(parts[1]);
+    if(Date.now()-timestamp>24*60*60*1000){localStorage.removeItem('admin_token');window.location.href=BASE+'/admin/';return;}
+  }catch(e){localStorage.removeItem('admin_token');window.location.href=BASE+'/admin/';return;}
+})();
 loadData();
 </script>
 </body>
