@@ -256,7 +256,7 @@ function getDepositProofById(req, res, checkAdminAuth, pathname) {
   if (!id || isNaN(id)) { sendJson(res, 400, { success: false, message: '无效的 ID' }); return; }
   try {
     const database = require('../db/index').getDb();
-    const record = database.prepare('SELECT * FROM deposits WHERE id = ?').get(id);
+    const record = database.prepare('SELECT * FROM deposits WHERE id = $1').get(id);
     if (!record) { sendJson(res, 404, { success: false, message: '记录不存在' }); return; }
     if (record.proof_path && !/\.[a-zA-Z0-9]+$/.test(record.proof_path)) {
       const depositsDir = path.join(__dirname, '..', '..', 'uploads', 'deposits');
@@ -278,9 +278,9 @@ function deleteDeposit(req, res, checkAdminAuth, pathname) {
   if (!id || isNaN(id)) { sendJson(res, 400, { success: false, message: '无效的 ID' }); return; }
   try {
     const database = require('../db/index').getDb();
-    const record = database.prepare('SELECT * FROM deposits WHERE id = ?').get(id);
+    const record = database.prepare('SELECT * FROM deposits WHERE id = $1').get(id);
     if (!record) { sendJson(res, 404, { success: false, message: '记录不存在' }); return; }
-    const result = database.prepare('DELETE FROM deposits WHERE id = ?').run(id);
+    const result = database.prepare('DELETE FROM deposits WHERE id = $1').run(id);
     if (result.changes > 0) {
       sendJson(res, 200, { success: true, message: '删除成功' });
     } else {

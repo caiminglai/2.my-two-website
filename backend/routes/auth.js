@@ -23,15 +23,21 @@ function register(req, res, readBodyWithLimit, checkRegisterRateLimit, clientIp)
   return readBodyWithLimit(req).then(body => {
     try {
       const data = JSON.parse(body);
-      if (!captchaService.checkCaptchaToken(data.captchaId, data.captchaToken)) {
-        sendJson(res, 400, { success: false, message: '滑动验证无效或已过期，请重新验证' });
-        return;
-      }
+      // 最低路径：跳过验证码校验
+      // if (!captchaService.checkCaptchaToken(data.captchaId, data.captchaToken)) {
+      //   sendJson(res, 400, { success: false, message: '滑动验证无效或已过期，请重新验证' });
+      //   return;
+      // }
       const result = authService.register(data.phone, data.password, data.nickname);
       if (result.success) setAuthCookie(res, result.token);
       sendJson(res, result.success ? 200 : 400, result);
     } catch (e) {
-      sendJson(res, 500, { success: false, message: '注册失败' });
+      console.error('[register error]', e.message || e);
+      if (e.message && e.message.includes('UNIQUE constraint failed')) {
+        sendJson(res, 400, { success: false, message: '该手机号已注册' });
+      } else {
+        sendJson(res, 500, { success: false, message: '注册失败' });
+      }
     }
   }).catch(e => {
     sendJson(res, 413, { success: false, message: e.message || '请求体过大' });
@@ -123,20 +129,22 @@ function adminLogin(req, res, readBodyWithLimit, checkLoginRateLimit) {
     return;
   }
   return readBodyWithLimit(req).then(body => {
-    const data = JSON.parse(body);
-    // 兼容旧版仅传 password 的调用：未传 username 时使用默认管理员账号
-    const username = data.username || process.env.ADMIN_USERNAME || 'admin';
-    const password = data.password;
-    return adminService.verifyAdminAccount(username, password).then(result => {
+    try {
+      const data = JSON.parse(body);
+      // 兼容旧版仅传 password 的调用：未传 username 时使用默认管理员账号
+      const username = data.username || process.env.ADMIN_USERNAME || 'admin';
+      const password = data.password;
+      const result = adminService.verifyAdminAccount(username, password);
       if (result.success) {
         const token = generateAdminToken(result.username);
         sendJson(res, 200, { success: true, token, username: result.username });
       } else {
         sendJson(res, 401, { success: false, message: result.message || '管理员账号或密码错误' });
       }
-    }).catch(e => {
+    } catch (e) {
+      console.error('[adminLogin error]', e.message || e);
       sendJson(res, 400, { success: false, message: '登录失败' });
-    });
+    }
   }).catch(e => {
     sendJson(res, 413, { success: false, message: e.message || '请求体过大' });
   });

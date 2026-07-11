@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { ArrowLeft, Shield, AlertCircle } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { loadColumns, loadRows, addRow } from '../services/user.service';
-import { DEPOSIT_RULES } from '../data/constants';
 import type { Row } from '../data/types';
 import { API_BASE_URL, normalizeAvatarUrl } from '../api/config';
 
@@ -11,9 +10,6 @@ export default function PostPage() {
   const [columns] = useState(() => loadColumns());
   const [data, setData] = useState<Record<string, string | number>>({});
   const [selectedTags, setSelectedTags] = useState<Record<string, string[]>>({});
-  const [agreeDeposit, setAgreeDeposit] = useState(false);
-  const [depositStatus, setDepositStatus] = useState<string | null>(null);
-  const [loadingDeposit, setLoadingDeposit] = useState(true);
 
   const userId = localStorage.getItem('user_id');
   const authToken = localStorage.getItem('auth_token');
@@ -25,26 +21,7 @@ export default function PostPage() {
       }
       return;
     }
-    checkDepositStatus();
   }, []);
-
-  const checkDepositStatus = async () => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/users/my-deposit`, {
-        headers: { 'Authorization': `Bearer ${authToken}` }
-      });
-      if (res.ok) {
-        const result = await res.json();
-        if (result.success && result.data) {
-          setDepositStatus(result.data.status);
-        }
-      }
-    } catch (e) {
-      // ignored
-    } finally {
-      setLoadingDeposit(false);
-    }
-  };
 
   const setVal = (key: string, val: string) => setData(p => ({ ...p, [key]: val }));
 
@@ -57,7 +34,6 @@ export default function PostPage() {
 
   const handleSubmit = async () => {
     if (!data.name) { alert('请填写昵称'); return; }
-    if (!agreeDeposit) { alert('请同意保证金制度'); return; }
 
     const finalData = { ...data };
     Object.entries(selectedTags).forEach(([key, tags]) => {
@@ -67,7 +43,7 @@ export default function PostPage() {
     const row: Row = {
       id: 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 4),
       user_id: userId,
-      deposit: DEPOSIT_RULES.amount,
+      deposit: 0,
       createdAt: Date.now(),
       data: finalData,
     };
@@ -105,17 +81,6 @@ export default function PostPage() {
             <ArrowLeft size={18} />
           </Link>
           <h1 className="text-lg font-medium" style={{ color: '#3D2E20' }}>发布资料</h1>
-        </div>
-
-        {/* Deposit Banner */}
-        <div className="rounded-xl p-4 mb-5 flex items-start gap-3" style={{ background: 'linear-gradient(135deg, rgba(107,175,125,0.06), #FFFDF9)', border: '1px solid #C4E0CC' }}>
-          <Shield size={18} style={{ color: '#6BAF7D', marginTop: '2px', flexShrink: 0 }} />
-          <div>
-            <p className="text-sm font-medium" style={{ color: '#6BAF7D' }}>保证金 {DEPOSIT_RULES.amount} 元</p>
-            <p className="text-xs mt-1 leading-relaxed" style={{ color: '#8B7B6B' }}>
-              见面后发现信息造假可投诉。核实后你获得{DEPOSIT_RULES.emotionalDamage}元感情损失费，平台收取{DEPOSIT_RULES.platformFee}元运营费，造假方删除数据可退回{DEPOSIT_RULES.deleteRefund}元。未被投诉可随时删除数据退回押金。
-            </p>
-          </div>
         </div>
 
         {/* Avatar Upload */}
@@ -220,18 +185,10 @@ export default function PostPage() {
           })}
         </div>
 
-        {/* Agreement */}
-        <div className="mt-5 p-4 rounded-xl flex items-start gap-3" style={{ background: '#FFFDF9', border: '1px solid #F0E4D4' }}>
-          <input type="checkbox" id="agree" className="mt-0.5" checked={agreeDeposit} onChange={e => setAgreeDeposit(e.target.checked)} />
-          <label htmlFor="agree" className="text-xs leading-relaxed" style={{ color: '#8B7B6B' }}>
-            我同意缴纳{DEPOSIT_RULES.amount}元保证金。我承诺填写的信息真实有效，如有造假愿意接受押金处罚。找到对象后可随时删除数据并退回押金。
-          </label>
-        </div>
-
         <button onClick={handleSubmit}
           className="w-full mt-5 mb-8 py-3.5 rounded-xl text-sm font-medium text-white transition-all"
           style={{ background: 'linear-gradient(135deg, #E87A5D, #D96A4D)', boxShadow: '0 2px 12px rgba(232,122,93,0.2)' }}>
-          发布（缴纳{DEPOSIT_RULES.amount}元保证金）
+          发布
         </button>
       </div>
     </div>

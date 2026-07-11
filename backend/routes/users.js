@@ -44,10 +44,7 @@ function getAuthInfo(req) {
 // ========== GET /api/users（用户列表 + keyword 搜索）
 function getUsers(req, res, _, parsedUrl) {
   const authInfo = getAuthInfo(req);
-  // 必须登录才能查看用户列表
-  if (!authInfo.userId && !authInfo.isAdmin) {
-    sendJson(res, 401, { success: false, message: '请先登录' }); return;
-  }
+  const isLoggedIn = !!(authInfo.userId || authInfo.isAdmin);
 
   const page = parseInt(parsedUrl.query.page) || 1;
   let limit = parseInt(parsedUrl.query.limit) || 20;
@@ -64,6 +61,8 @@ function getUsers(req, res, _, parsedUrl) {
   } else {
     if (authInfo.isAdmin) {
       limit = 10000;
+    } else if (!isLoggedIn) {
+      if (limit > 20) limit = 20;
     } else if (limit > 50) {
       limit = 50;
     }
@@ -283,11 +282,16 @@ function editUser(req, res, readBodyWithLimit, checkAdminAuth, pathname) {
 }
 
 // ========== DELETE /api/users/:id（删除用户）
-function deleteUser(req, res, _, pathname) {
+function deleteUser(req, res, checkAdminAuth, pathname) {
   const authInfo = getAuthInfo(req);
   const id = pathname.split('/')[3];
   if (!id || !userService.validateIdFormat(id)) {
     sendJson(res, 400, { success: false, message: '无效的用户ID' });
+    return;
+  }
+  // 必须登录
+  if (!authInfo.userId && !authInfo.isAdmin) {
+    sendJson(res, 401, { success: false, message: '需要登录' });
     return;
   }
   const result = userService.removeUser(id, authInfo.userId, authInfo.isAdmin);

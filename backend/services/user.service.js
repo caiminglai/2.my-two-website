@@ -6,6 +6,7 @@
 
 const userDb = require('../db/users');
 const authDb = require('../db/auth');
+const adminDb = require('../db/admin');
 const { verifyToken, generateToken } = require('../db/index');
 
 // ========== 脱敏工具（业务规则：联系方式需要脱敏后返回给前端） ==========
@@ -150,7 +151,7 @@ function createUser(userData, ownerUserId) {
       avatar: sanitizeString(userData.data?.avatar || ''),
       ...userData.data
     },
-    status: userData.status || 'pending'
+    status: userData.status || 'approved'
   };
   userDb.addUser(newUser);
   return { success: true, user: newUser };
@@ -209,13 +210,13 @@ function removeMyUser(userId) {
 
 function approveUser(id) {
   userDb.approveUser(id);
-  userDb.logAdminAction('approve_user', id, {});
+  adminDb.logAdminAction('approve_user', id, {});
   return { success: true, message: '已通过审核' };
 }
 
 function rejectUser(id) {
   userDb.rejectUser(id);
-  userDb.logAdminAction('reject_user', id, {});
+  adminDb.logAdminAction('reject_user', id, {});
   return { success: true, message: '已拒绝' };
 }
 
@@ -243,11 +244,11 @@ function batchSave(users, isAdmin = false) {
 // ========== 管理员功能 ==========
 
 function getAdminLogs(limit = 50) {
-  return userDb.getAdminLogs(limit);
+  return adminDb.getAdminLogs(limit);
 }
 
 function getAllCustomFilters() {
-  const fields = userDb.getAllCustomFilters();
+  const fields = adminDb.getAllCustomFilters();
   return fields.map(f => ({
     ...f,
     options: f.field_options ? f.field_options.split(',').filter(o => o.trim()) : []
@@ -261,12 +262,12 @@ function addCustomFilter(fieldKey, fieldLabel, fieldType, description, fieldOpti
   let opts = '';
   if (Array.isArray(fieldOptions)) opts = fieldOptions.join(',');
   else if (typeof fieldOptions === 'string') opts = fieldOptions;
-  const field = userDb.addCustomFilter(fieldKey.trim(), fieldLabel.trim(), fieldType || 'text', description || '', opts);
+  const field = adminDb.addCustomFilter(fieldKey.trim(), fieldLabel.trim(), fieldType || 'text', description || '', opts);
   return { success: true, data: field };
 }
 
 function removeCustomFilter(id) {
-  const deleted = userDb.deleteCustomFilter(id);
+  const deleted = adminDb.deleteCustomFilter(id);
   return { success: deleted, message: deleted ? '删除成功' : '未找到' };
 }
 

@@ -41,7 +41,9 @@ export default function Home() {
   // 分页相关状态（必须在 loadUsers 函数之前定义）
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 50; // 每页50条
-  const [loadingPage, setLoadingPage] = useState(false); // 是否正在翻页（前端分页，始终 false）
+  const [totalPages, setTotalPages] = useState(1); // 总页数
+  const [totalCount, setTotalCount] = useState(0); // 总人数
+  const [loadingPage, setLoadingPage] = useState(false); // 是否正在翻页
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -51,16 +53,29 @@ export default function Home() {
   const [activeSearchKeyword, setActiveSearchKeyword] = useState('');
   const [activeSearchExact, setActiveSearchExact] = useState(false);
 
-  // 加载所有用户数据（一次性加载，前端分页 + 筛选）
-  const loadUsers = async () => {
-    setLoading(true);
+  // 构造 API URL
+  const buildApiUrl = (page: number, keyword: string, exact: boolean) => {
+    let url = `${API_BASE_URL}/users?page=${page}&limit=${pageSize}`;
+    if (keyword.trim()) {
+      url += `&keyword=${encodeURIComponent(keyword.trim())}&exact=${exact ? 'true' : 'false'}`;
+    }
+    return url;
+  };
+
+  // 加载用户数据（支持分页 + 搜索）
+  const loadUsers = async (page: number, keyword: string = activeSearchKeyword, exact: boolean = activeSearchExact) => {
+    if (page === 1) {
+      setLoading(true);
+    } else {
+      setLoadingPage(true);
+    }
     setError(null);
 
     try {
       const authToken = localStorage.getItem('auth_token');
       const headers: Record<string, string> = authToken ? { 'Authorization': `Bearer ${authToken}` } : {};
       const [usersRes, cfRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/users?page=1&limit=20`, { headers }),
+        fetch(buildApiUrl(page, keyword, exact), { headers }),
         fetch(`${API_BASE_URL}/users/all-custom-fields`).catch(() => null),
       ]);
       const usersData = await usersRes.json();
@@ -71,13 +86,11 @@ export default function Home() {
         if (cfRes && cfRes.ok) {
           const cfData = await cfRes.json();
           if (cfData.success && Array.isArray(cfData.data)) {
-            // 构建 user_id → {field_key: field_value} 映射
             const cfMap: Record<string, Record<string, string>> = {};
             for (const cf of cfData.data) {
               if (!cfMap[cf.user_id]) cfMap[cf.user_id] = {};
               cfMap[cf.user_id][cf.field_key] = cf.field_value;
             }
-            // 合并到每行的 data 中
             rows = rows.map((row: any) => {
               if (row.user_id && cfMap[row.user_id]) {
                 return { ...row, data: { ...row.data, ...cfMap[row.user_id] } };
@@ -88,6 +101,9 @@ export default function Home() {
         }
 
         setRows(rows);
+        setCurrentPage(page);
+        setTotalCount(usersData.total || rows.length);
+        setTotalPages(Math.max(1, Math.ceil((usersData.total || rows.length) / pageSize)));
       } else {
         setError('加载数据失败');
       }
@@ -96,6 +112,7 @@ export default function Home() {
       setError('网络错误，请刷新页面重试');
     } finally {
       setLoading(false);
+      setLoadingPage(false);
     }
   };
 
@@ -108,7 +125,7 @@ export default function Home() {
     setConditions([{ column: '', value: '' }]);
     setActiveSearchKeyword(searchKeyword);
     setActiveSearchExact(searchExact);
-    setCurrentPage(1);
+    loadUsers(1, searchKeyword, searchExact);
   };
 
   // 重置搜索
@@ -119,24 +136,28 @@ export default function Home() {
     setConditions([{ column: '', value: '' }]);
     setActiveSearchKeyword('');
     setActiveSearchExact(false);
-    setCurrentPage(1);
+    loadUsers(1, '', false);
   };
 
   // 上一页
   const goPrevPage = () => {
-    setCurrentPage(p => Math.max(1, p - 1));
+    if (currentPage > 1 && !loadingPage) {
+      loadUsers(currentPage - 1, activeSearchKeyword, activeSearchExact);
+    }
   };
 
   // 下一页
   const goNextPage = () => {
-    setCurrentPage(p => Math.min(totalPages, p + 1));
+    if (currentPage < totalPages && !loadingPage) {
+      loadUsers(currentPage + 1, activeSearchKeyword, activeSearchExact);
+    }
   };
 
   // 初始加载
   useEffect(() => {
     const userId = localStorage.getItem('user_id');
     setCurrentUserId(userId);
-    loadUsers();
+    loadUsers(1, '', false);
   }, []);
 
 
@@ -229,7 +250,7 @@ export default function Home() {
   const filteredRows = useMemo(() => {
     let filtered = rows;
 
-    // 关键词搜索
+    // 关键词搜索（如果后端已处理，这里可以跳过，但保留以防万一）
     if (activeSearchKeyword.trim()) {
       const keyword = activeSearchKeyword.trim().toLowerCase();
       filtered = filtered.filter(r => {
@@ -259,14 +280,8 @@ export default function Home() {
       : filteredRows.map(r => ({ row: r, score: 0, matches: [] as string[] }))
     , [hasSearched, filteredRows, debouncedConditions]);
 
-  const totalCount = results.length;
-  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
-
-  // 前端分页
-  const displayResults = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
-    return results.slice(start, start + pageSize);
-  }, [results, currentPage]);
+  // 后端分页模式：直接使用 results 作为 displayResults（每页数据由后端返回）
+  const displayResults = results;
 
   const toggleFavorite = useCallback((id: string) => {
     setFavorites(prev =>

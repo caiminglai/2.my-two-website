@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { API_BASE_URL } from '../api/config';
 
 interface CaptchaData {
@@ -28,13 +28,19 @@ export default function SliderCaptcha({ onVerified, onReset }: Props) {
   const startXRef = useRef(0);
   const currentXRef = useRef(0);
 
-  const fetchCaptcha = async () => {
+  // 用 ref 保存最新回调，避免依赖变化导致无限循环
+  const onVerifiedRef = useRef(onVerified);
+  const onResetRef = useRef(onReset);
+  onVerifiedRef.current = onVerified;
+  onResetRef.current = onReset;
+
+  const fetchCaptcha = useCallback(async (skipReset = false) => {
     setLoading(true);
     setError('');
     setVerified(false);
     setOffsetX(0);
     currentXRef.current = 0;
-    onReset?.();
+    if (!skipReset) onResetRef.current?.();
     try {
       const res = await fetch(`${API_BASE_URL}/auth/captcha`);
       const data = await res.json();
@@ -48,11 +54,11 @@ export default function SliderCaptcha({ onVerified, onReset }: Props) {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    fetchCaptcha();
-  }, []);
+    fetchCaptcha(true); // 初始加载不调用 onReset，避免 key 变化导致无限循环
+  }, [fetchCaptcha]);
 
   const handleStart = (clientX: number) => {
     if (verified || !captcha) return;
@@ -83,7 +89,7 @@ export default function SliderCaptcha({ onVerified, onReset }: Props) {
       const data = await res.json();
       if (data.success && data.data?.token) {
         setVerified(true);
-        onVerified(captcha.captchaId, data.data.token);
+        onVerifiedRef.current(captcha.captchaId, data.data.token);
       } else {
         setError(data.message || '验证失败，请重试');
         setOffsetX(0);

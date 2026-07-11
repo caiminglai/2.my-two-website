@@ -52,7 +52,7 @@
 │   └── .prettierrc
 │
 ├── data/                        # 数据库
-│   └── match.db                # SQLite 数据库
+│   └── pg_data/                # PostgreSQL 数据目录
 │
 ├── uploads/                      # 用户上传文件目录
 │   ├── avatars/                  # 用户头像
@@ -95,24 +95,30 @@ backend/
 │   ├── m.html                      # 手机版管理主页
 │   └── main.html                   # 桌面版管理主页
 │
-├── db/                             # 数据访问层（纯 SQL，8 个文件）
+├── db/                             # 数据访问层（纯 SQL，9 个文件）
 │   ├── index.js                    # DB 连接 / Token / 加密 / 密码哈希
 │   ├── users.js                    # 用户表：CRUD / 搜索 / 统计 / 审核
 │   ├── auth.js                     # 账号注册 / 密码校验 / 密码修改
 │   ├── reports.js                  # 举报：新增 / 列表 / 状态更新 / 删除
 │   ├── ratings.js                  # 评价：新增 / 列表 / 平均分
 │   ├── payments.js                 # 支付/保证金/解锁：订单 / 保证金 / 解锁请求
-│   └── admin.js                    # 管理员：日志 / 自定义筛选字段
+│   ├── admin.js                    # 管理员：日志 / 自定义筛选字段
+│   ├── vector.js                   # 向量数据库：向量 CRUD / 相似搜索 / 双向匹配
+│   └── field-mappings.js           # 字段映射工具
 │
-├── routes/                         # API 路由层（6 个文件）
+├── routes/                         # API 路由层（10 个文件）
 │   ├── users.js                    # 用户相关 API
 │   ├── auth.js                     # 认证登录 API
 │   ├── reports.js                  # 举报 API
 │   ├── ratings.js                  # 评价 API
 │   ├── payment.js                  # 支付 API
-│   └── upload.js                   # 上传 API
+│   ├── upload.js                   # 上传 API
+│   ├── vector.js                   # 向量搜索 API
+│   ├── admin-custom-fields.js      # 管理员自定义字段 API
+│   ├── user-custom-fields.js       # 用户自定义字段 API
+│   └── contact-unlock.js           # 联系方式解锁 API
 │
-├── services/                       # 业务逻辑层（9 个文件）
+├── services/                       # 业务逻辑层（10 个文件）
 │   ├── user.service.js             # 用户业务：数据脱敏 / 验证 / 审核流转
 │   ├── auth.service.js             # 认证业务：注册 / 登录 / Token 生成
 │   ├── reports.service.js          # 举报业务：提交验证 / 状态管理
@@ -121,7 +127,8 @@ backend/
 │   ├── admin.service.js            # 管理员业务：日志 / 备份 / 字段管理
 │   ├── captcha.service.js          # 滑动验证码服务
 │   ├── csrf.service.js             # CSRF 防护服务
-│   └── sms.service.js              # 短信验证预留服务
+│   ├── sms.service.js              # 短信验证预留服务
+│   └── vector.service.js           # 向量业务：文本向量化 / 相似搜索 / 双向匹配
 │
 └── server.js                       # 服务器入口：注册路由 / 全局中间件
 ```
@@ -196,7 +203,10 @@ server: {
 
 ## 4. 数据库 Schema
 
-### 4.1 核心数据表
+数据库：PostgreSQL 18 + pgvector v0.8.2
+数据目录：`data/pg_data/`
+
+### 4.1 核心业务数据表
 
 | 表名 | 用途 |
 |------|------|
@@ -211,7 +221,46 @@ server: {
 | `admin_settings` | 管理设置 |
 | `admin_logs` | 管理员操作日志 |
 
-说明：数据库文件位于 `data/match.db`，原 `database.js` 已被拆分到 `db/` 目录，不再使用单一大文件。
+### 4.2 向量数据表（pgvector）
+
+**表名：`user_vectors`**
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `id` | SERIAL PRIMARY KEY | 主键 |
+| `user_id` | VARCHAR(50) NOT NULL UNIQUE | 用户ID（关联 users 表） |
+| `profile_vector` | vector(1536) | 用户资料向量 |
+| `expectation_vector` | vector(1536) | 择偶要求向量 |
+| `profile_text` | TEXT | 用于生成向量的用户资料文本 |
+| `expectation_text` | TEXT | 用于生成向量的择偶要求文本 |
+| `model` | VARCHAR(100) | 向量模型名称（默认 text-embedding-ada-002） |
+| `created_at` | BIGINT NOT NULL | 创建时间戳 |
+| `updated_at` | BIGINT NOT NULL | 更新时间戳 |
+
+**索引：**
+- `idx_user_vectors_profile`：HNSW 索引，`profile_vector vector_cosine_ops`
+- `idx_user_vectors_expectation`：HNSW 索引，`expectation_vector vector_cosine_ops`
+
+**技术说明：**
+- 向量维度：1536 维（OpenAI text-embedding-ada-002）
+- 索引类型：HNSW（Hierarchical Navigable Small World）- 近似最近邻搜索
+- 距离度量：余弦相似度（cosine similarity）
+- 相似度计算：`1 - (vector_a <=> vector_b)`，值越大越相似（范围 0~1）
+
+### 4.3 向量数据库操作模块（`db/vector.js`）
+
+| 函数 | 说明 |
+|------|------|
+| `initVectorTables()` | 初始化向量表和索引 |
+| `upsertUserVector()` | 插入或更新用户向量 |
+| `findSimilarUsersByProfile()` | 按资料向量找相似用户 |
+| `findSimilarUsersByExpectation()` | 按择偶要求向量找相似用户 |
+| `findMutualMatchUsers()` | 双向匹配（我的要求 vs 对方资料 + 对方要求 vs 我的资料） |
+| `getUserVector()` | 获取用户向量 |
+| `deleteUserVector()` | 删除用户向量 |
+| `getVectorStats()` | 获取向量统计信息 |
+
+说明：数据库已从 SQLite 迁移至 PostgreSQL，数据目录位于 `data/pg_data/`，原 `database.js` 已被拆分到 `db/` 目录，不再使用单一大文件。
 
 ---
 
@@ -274,6 +323,21 @@ server: {
 | PUT | `/api/admin/deposits/approve` | 审核通过保证金 | 管理员 |
 | PUT | `/api/admin/deposits/reject` | 拒绝保证金 | 管理员 |
 | GET | `/api/admin/unlock-records` | 解锁记录 | 管理员 |
+
+### 5.7 向量搜索接口
+
+| 方法 | 路径 | 描述 | 认证 |
+|------|------|------|------|
+| GET | `/api/vector/stats` | 向量统计信息 | 否 |
+| POST | `/api/vector/generate/:userId` | 生成并存储用户向量 | Token |
+| GET | `/api/vector/similar/:userId` | 相似用户搜索 | Token |
+| GET | `/api/vector/match/:userId` | 双向匹配推荐 | Token |
+| POST | `/api/vector/batch` | 批量生成向量 | 管理员 |
+
+**向量搜索参数说明：**
+- `type`：搜索类型，`profile`（资料相似）或 `expectation`（要求相似），默认 `profile`
+- `limit`：返回结果数量，默认 10
+- 相似度范围：0~1，值越大越相似
 
 ---
 

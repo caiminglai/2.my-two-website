@@ -7,7 +7,7 @@ const ENV_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 // 开发环境: /jzxr/api（通过代理转发到 http://localhost:8080/api）
 // 生产环境: https://your_domain.com/api
-export const API_BASE_URL = ENV_BASE_URL || '/api';
+export const API_BASE_URL = ENV_BASE_URL || '/jzxr/api';
 
 // API 端点
 export const API_ENDPOINTS = {

@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { ArrowLeft, Heart, Eye, EyeOff, User, Lock, Phone } from 'lucide-react';
 import { API_BASE_URL } from '../api/config';
-import SliderCaptcha from '../components/SliderCaptcha';
 
 interface LoginResponse {
   success: boolean;
@@ -25,20 +24,6 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [captchaId, setCaptchaId] = useState('');
-  const [captchaToken, setCaptchaToken] = useState('');
-  const [captchaKey, setCaptchaKey] = useState(0);
-
-  const handleCaptchaVerified = (id: string, token: string) => {
-    setCaptchaId(id);
-    setCaptchaToken(token);
-  };
-
-  const resetCaptcha = () => {
-    setCaptchaId('');
-    setCaptchaToken('');
-    setCaptchaKey(k => k + 1);
-  };
 
   const handleSubmit = async () => {
     setError('');
@@ -62,10 +47,6 @@ export default function LoginPage() {
         setError('请输入昵称');
         return;
       }
-      if (!captchaId || !captchaToken) {
-        setError('请先完成滑动验证');
-        return;
-      }
     }
 
     setLoading(true);
@@ -74,7 +55,7 @@ export default function LoginPage() {
       const endpoint = isLogin ? '/auth/login' : '/auth/register';
       const body = isLogin
         ? { phone, password }
-        : { phone, password, nickname, captchaId, captchaToken };
+        : { phone, password, nickname };
 
       const res = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: 'POST',
@@ -211,14 +192,6 @@ export default function LoginPage() {
             </div>
           )}
 
-          {!isLogin && (
-            <SliderCaptcha
-              key={captchaKey}
-              onVerified={handleCaptchaVerified}
-              onReset={resetCaptcha}
-            />
-          )}
-
           <button
             onClick={handleSubmit}
             disabled={loading}
@@ -230,7 +203,7 @@ export default function LoginPage() {
 
           <div className="text-center pt-2">
             <button
-              onClick={() => { setIsLogin(!isLogin); setError(''); resetCaptcha(); }}
+              onClick={() => { setIsLogin(!isLogin); setError(''); }}
               className="text-sm"
               style={{ color: '#E87A5D' }}
             >

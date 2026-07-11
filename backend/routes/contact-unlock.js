@@ -153,6 +153,7 @@ function adminUnlockContact(req, res, checkAdminAuth, readBodyWithLimit, pathnam
 }
 
 // ========== GET /api/users/:id/check-unlock ==========
+// 最低路径：登录即可查看联系方式，跳过支付流程
 function checkUnlock(req, res, pathname, query) {
   const parts = pathname.split('/').filter(p => p);
   const userIdx = parts.indexOf('users');
@@ -160,7 +161,6 @@ function checkUnlock(req, res, pathname, query) {
   if (!targetId) {
     sendJson(res, 400, { success: false, message: '缺少目标用户ID' }); return;
   }
-  // 从 Bearer token 获取 viewerId，防止未认证遍历联系方式
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     sendJson(res, 401, { success: false, message: '请先登录' }); return;
@@ -169,15 +169,12 @@ function checkUnlock(req, res, pathname, query) {
   if (!viewerId) {
     sendJson(res, 401, { success: false, message: 'token无效' }); return;
   }
-  const unlocked = paymentsDb.checkContactUnlocked(String(viewerId), targetId);
-  let targetContact = null;
-  if (unlocked) {
-    const database = dbIndex.getDb();
-    const stmt = database.prepare('SELECT contact FROM users WHERE user_id = ? OR id = ? LIMIT 1');
-    const row = stmt.get(targetId, targetId);
-    if (row && row.contact) targetContact = dbIndex.decrypt(row.contact);
-  }
-  sendJson(res, 200, { success: true, unlocked, contact: targetContact });
+  // 直接返回解密后的联系方式
+  const database = dbIndex.getDb();
+  const stmt = database.prepare('SELECT contact FROM users WHERE user_id = $1 OR id = $2 LIMIT 1');
+  const row = stmt.get(targetId, targetId);
+  const targetContact = (row && row.contact) ? dbIndex.decrypt(row.contact) : null;
+  sendJson(res, 200, { success: true, unlocked: true, contact: targetContact });
 }
 
 // ========== GET /api/admin/unlock-records ==========

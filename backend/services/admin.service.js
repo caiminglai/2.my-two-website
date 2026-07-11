@@ -31,18 +31,19 @@ function isAdminUsername(username) {
 }
 
 // 密码比较：兼容明文密码（旧数据）和 bcrypt 哈希（新数据），登录成功后自动升级
-async function comparePassword(inputPassword, storedPassword) {
+// 注意：必须用同步bcrypt，因为deasync DB层与async/await冲突会导致死锁
+function comparePassword(inputPassword, storedPassword) {
   if (!storedPassword) return false;
   // bcrypt 哈希以 $2a$ 或 $2b$ 开头
   if (storedPassword.startsWith('$2a$') || storedPassword.startsWith('$2b$')) {
-    return bcrypt.compare(inputPassword, storedPassword);
+    return bcrypt.compareSync(inputPassword, storedPassword);
   }
   // 明文密码直接比较
   const match = (inputPassword === storedPassword);
   if (match) {
     // 自动升级为 bcrypt 哈希
     try {
-      const hashed = await bcrypt.hash(inputPassword, 10);
+      const hashed = bcrypt.hashSync(inputPassword, 10);
       adminDb.setAdminPassword(hashed);
       console.log('[Admin] 密码已自动升级为 bcrypt 哈希');
     } catch (e) {
@@ -52,7 +53,7 @@ async function comparePassword(inputPassword, storedPassword) {
   return match;
 }
 
-async function verifyAdminAccount(username, inputPassword) {
+function verifyAdminAccount(username, inputPassword) {
   if (!username || !inputPassword) {
     return { success: false, message: '请输入管理员账号和密码' };
   }
@@ -69,7 +70,7 @@ async function verifyAdminAccount(username, inputPassword) {
     isAccountPassword = false;
   }
 
-  const match = await comparePassword(inputPassword, expectedPassword);
+  const match = comparePassword(inputPassword, expectedPassword);
   if (!match) {
     return { success: false, message: '管理员账号或密码错误' };
   }

@@ -1420,7 +1420,7 @@ function renderDepositsTable(){
     var td3=document.createElement('td');
     if(deposit.proof_path){
       var _raw=String(deposit.proof_path).replace(/^\/+/,'');
-      var _proof=BASE+BASE+'/jzxr/'+_raw;
+      var _proof=BASE+'/'+_raw;
       var thumb=document.createElement('img');
       thumb.src=_proof;
       thumb.alt='凭证';
@@ -1811,7 +1811,7 @@ function renderReportsTable(){
     var proofPath=report.proof_path||report.proofPath||'';
     if(proofPath){
       var _raw2=String(proofPath).replace(/^\/+/,'');
-      var _proof2=BASE+BASE+'/jzxr/'+_raw2;
+      var _proof2=BASE+'/'+_raw2;
       var thumb=document.createElement('img');
       thumb.src=_proof2;
       thumb.alt='凭证';
@@ -2273,7 +2273,7 @@ function renderUnlockRecordsTable(){
     var td4=document.createElement('td');
     if(record.proof_path){
       var rawPath=String(record.proof_path).replace(/^\/+/,'');
-      var proofSrc=BASE+BASE+'/jzxr/'+rawPath;
+      var proofSrc=BASE+'/'+rawPath;
       var proofImg=document.createElement('img');
       proofImg.src=proofSrc;
       proofImg.alt='凭证';
