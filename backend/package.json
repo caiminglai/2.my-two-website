@@ -6,12 +6,10 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
-    "backup": "node -e \"require('./db/index').backupDatabase()\"",
     "lint": "eslint ."
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
-    "better-sqlite3": "^12.10.0",
     "deasync": "^0.1.31",
     "dotenv": "^17.2.0",
     "pg": "^8.22.0",

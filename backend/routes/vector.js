@@ -5,7 +5,9 @@ const vectorService = require('../services/vector.service');
  */
 async function handleVectorRequest(req, res) {
   const url = new URL(req.url, `http://${req.headers.host}`);
-  const pathname = url.pathname;
+  let pathname = url.pathname;
+  // 统一剥离 /jzxr 前缀，与 server.js 的 normalizePath 保持一致
+  pathname = pathname.replace(/^\/jzxr\//, '/');
   const method = req.method;
 
   // GET /api/vector/stats - 获取向量统计

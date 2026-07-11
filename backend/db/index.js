@@ -13,40 +13,73 @@ const pgConfig = {
 };
 
 let client = null;
+let connecting = false;
+
+// 异步初始化连接（在 server.js 启动时调用）
+async function initConnection() {
+  if (client) return;
+  connecting = true;
+  client = new Client(pgConfig);
+  client.on('end', () => { client = null; });
+  client.on('error', () => { client = null; });
+  await client.connect();
+  connecting = false;
+}
 
 function getClient() {
-  if (!client) {
+  if (!client && !connecting) {
+    // 首次同步连接（兼容旧代码，但推荐在启动时调用 initConnection）
     client = new Client(pgConfig);
+    client.on('end', () => { client = null; });
+    client.on('error', () => { client = null; });
     const connectSync = deasync(client.connect.bind(client));
     connectSync();
   }
   return client;
 }
 
+// 断线重置
+function resetClient() {
+  client = null;
+}
+
 function prepare(sql) {
-  const pgClient = getClient();
-  return {
-    get: (...params) => {
+  function runQuery(method, ...params) {
+    let pgClient = getClient();
+    try {
       const querySync = deasync(pgClient.query.bind(pgClient));
       const result = querySync(sql, params);
+      return result;
+    } catch (e) {
+      // 连接断开，重置后重试一次
+      if (e.message && (e.message.includes('Connection terminated') || e.message.includes('Connection ended'))) {
+        resetClient();
+        pgClient = getClient();
+        const querySync = deasync(pgClient.query.bind(pgClient));
+        const result = querySync(sql, params);
+        return result;
+      }
+      throw e;
+    }
+  }
+  return {
+    get: (...params) => {
+      const result = runQuery('get', ...params);
       return result.rows.length > 0 ? result.rows[0] : null;
     },
     all: (...params) => {
-      const querySync = deasync(pgClient.query.bind(pgClient));
-      const result = querySync(sql, params);
+      const result = runQuery('all', ...params);
       return result.rows;
     },
     run: (...params) => {
-      const querySync = deasync(pgClient.query.bind(pgClient));
-      const result = querySync(sql, params);
+      const result = runQuery('run', ...params);
       return {
         changes: result.rowCount,
         lastInsertRowid: result.rows[0] && result.rows[0].id
       };
     },
     exec: () => {
-      const querySync = deasync(pgClient.query.bind(pgClient));
-      querySync(sql);
+      runQuery('exec');
     }
   };
 }
@@ -209,20 +242,9 @@ function verifyAdminToken(token) {
   }
 }
 
-function backupDatabase() {
-  return '备份功能暂不支持PostgreSQL';
-}
-
-function getBackupList() {
-  return [];
-}
-
-function restoreFromBackup(backupPath) {
-  return false;
-}
-
 module.exports = {
   getDb,
+  initConnection,
   hashPassword,
   hashPasswordSync,
   verifyPassword,
@@ -233,8 +255,5 @@ module.exports = {
   verifyToken,
   generateAdminToken,
   verifyAdminToken,
-  backupDatabase,
-  getBackupList,
-  restoreFromBackup,
   closeDb
 };

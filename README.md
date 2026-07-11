@@ -24,15 +24,14 @@
 │   └── vite.config.ts
 │
 ├── backend/                # 后端（三层架构）
-│   ├── db/                 # 数据访问层（8 个文件）
-│   ├── routes/             # API 路由层（6 个文件）
-│   ├── services/           # 业务逻辑层（8 个文件）
+│   ├── db/                 # 数据访问层（含 vector.js 向量模块）
+│   ├── routes/             # API 路由层（含 vector.js 向量路由）
+│   ├── services/           # 业务逻辑层（含 vector.service.js）
 │   ├── admin/              # 管理后台 HTML 模板
 │   ├── server.js           # 服务器入口
-
 │
 ├── data/                   # 数据库
-│   └── match.db
+│   └── pg_data/            # PostgreSQL 数据目录
 │
 └── uploads/                # 用户上传文件
 ```
@@ -66,6 +65,8 @@ npm run dev
 - 资料发布（40+ 字段）
 - 关键词搜索 + 多条件筛选
 - 多条件 AND 匹配
+- 向量相似匹配（pgvector，mock/openai 双模式）
+- 双向匹配推荐（用户画像 ↔ 择偶要求）
 - 评价体系
 - 举报系统
 - 保证金机制
@@ -85,7 +86,7 @@ npm run dev
 
 - Node.js >= 18.0.0（推荐 v20.20.2）
 - npm >= 10.0.0
-- Windows 开发需要 Visual Studio C++ Build Tools（better-sqlite3 编译依赖）
+- PostgreSQL 18 + pgvector 扩展
 
 ## License
 

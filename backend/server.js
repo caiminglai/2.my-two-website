@@ -483,15 +483,23 @@ const server = http.createServer(async (req, res) => {
 });
 
 const PORT = process.env.PORT || 8080;
-server.listen(PORT, () => {
-  console.log('');
-  console.log('╔══════════════════════════════════════════╗');
-  console.log('║     精准匹配 - 后端服务已启动            ║');
-  console.log('╠══════════════════════════════════════════╣');
-  console.log(`║  API地址: http://localhost:${PORT}           ║`);
-  console.log(`║  环境: ${process.env.NODE_ENV || 'development'}                           ║`);
-  console.log('╚══════════════════════════════════════════╝');
-  console.log('');
+
+// 异步初始化数据库连接后再启动服务器
+const { initConnection } = require('./db/index.js');
+initConnection().then(() => {
+  server.listen(PORT, () => {
+    console.log('');
+    console.log('╔══════════════════════════════════════════╗');
+    console.log('║     精准匹配 - 后端服务已启动            ║');
+    console.log('╠══════════════════════════════════════════╣');
+    console.log(`║  API地址: http://localhost:${PORT}           ║`);
+    console.log(`║  环境: ${process.env.NODE_ENV || 'development'}                           ║`);
+    console.log('╚══════════════════════════════════════════╝');
+    console.log('');
+  });
+}).catch(err => {
+  console.error('数据库连接失败:', err.message);
+  process.exit(1);
 });
 
 // ===== 全局错误处理 =====
