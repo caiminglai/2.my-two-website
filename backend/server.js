@@ -15,6 +15,7 @@ const { applySecurity } = require('./middleware/安全');
 const { requestLogger } = require('./middleware/日志');
 const { parseMultipart, collectBody, validateMagicBytes, validateExtension } = require('./utils/multipart');
 const { getAuthTokenFromCookie } = require('./utils/cookie工具');
+const { handleVectorRequest } = require('./routes/vector');
 
 // ========== 管理员安全配置 ==========
 // 管理员密码由 admin.service.js 管理，优先从环境变量读取，其次从数据库读取
@@ -144,7 +145,7 @@ function extractId(pathname, prefix) {
 }
 
 // ========== 创建服务器 ==========
-const server = http.createServer((req, res) => {
+const server = http.createServer(async (req, res) => {
   // ===== 中间件 =====
   applySecurity(req, res);
   requestLogger(req, res);
@@ -261,6 +262,10 @@ const server = http.createServer((req, res) => {
   if (req.method === 'DELETE' && /^\/api\/admin\/deposits\/\d+$/.test(pathname)) {
     uploadRoutes.deleteDeposit(req, res, checkAdminAuth, pathname); return;
   }
+
+  // --- 向量搜索 ---
+  const handled = await handleVectorRequest(req, res);
+  if (handled) return;
 
   // --- 查看联系方式支付 ---
   if (req.method === 'POST' && pathname === '/api/payments/view-contact') {
