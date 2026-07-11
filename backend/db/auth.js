@@ -1,7 +1,3 @@
-// ============================================================
-// 数据访问层 - 认证（纯 SQL，无业务逻辑）
-// ============================================================
-
 const { getDb, hashPasswordSync, verifyPasswordSync } = require('./index');
 
 function createAuthUser(phone, password, nickname) {
@@ -10,7 +6,7 @@ function createAuthUser(phone, password, nickname) {
   const hashedPassword = hashPasswordSync(password);
   const createdAt = Date.now();
   const stmt = database.prepare(
-    'INSERT INTO auth_users (id, phone, password, nickname, created_at) VALUES (?, ?, ?, ?, ?)'
+    'INSERT INTO auth_users (id, phone, password, nickname, created_at) VALUES ($1, $2, $3, $4, $5)'
   );
   stmt.run(id, phone, hashedPassword, nickname || '', createdAt);
   return id;
@@ -18,12 +14,12 @@ function createAuthUser(phone, password, nickname) {
 
 function verifyAuthUser(phone, password) {
   const database = getDb();
-  const stmt = database.prepare('SELECT * FROM auth_users WHERE phone = ?');
+  const stmt = database.prepare('SELECT * FROM auth_users WHERE phone = $1');
   const user = stmt.get(phone);
   if (!user) return null;
   const storedPassword = user.password;
   if (verifyPasswordSync(password, storedPassword)) {
-    database.prepare('UPDATE auth_users SET last_login = ? WHERE id = ?').run(Date.now(), user.id);
+    database.prepare('UPDATE auth_users SET last_login = $1 WHERE id = $2').run(Date.now(), user.id);
     return { id: user.id, phone: user.phone, nickname: user.nickname };
   }
   return null;
@@ -31,20 +27,20 @@ function verifyAuthUser(phone, password) {
 
 function getAuthUserById(id) {
   const database = getDb();
-  const stmt = database.prepare('SELECT id, phone, nickname, created_at, last_login FROM auth_users WHERE id = ?');
+  const stmt = database.prepare('SELECT id, phone, nickname, created_at, last_login FROM auth_users WHERE id = $1');
   return stmt.get(id) || null;
 }
 
 function getAuthUserByIdWithPassword(id) {
   const database = getDb();
-  const stmt = database.prepare('SELECT id, phone, password, nickname, created_at, last_login FROM auth_users WHERE id = ?');
+  const stmt = database.prepare('SELECT id, phone, password, nickname, created_at, last_login FROM auth_users WHERE id = $1');
   return stmt.get(id) || null;
 }
 
 function updateAuthUserPassword(userId, newPassword) {
   const database = getDb();
   const hashedPassword = hashPasswordSync(newPassword);
-  database.prepare('UPDATE auth_users SET password = ? WHERE id = ?').run(hashedPassword, userId);
+  database.prepare('UPDATE auth_users SET password = $1 WHERE id = $2').run(hashedPassword, userId);
   return true;
 }
 

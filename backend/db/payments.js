@@ -1,17 +1,11 @@
-// ============================================================
-// 数据访问层 - 支付/保证金/联系方式解锁（纯 SQL，无业务逻辑）
-// ============================================================
-
 const { getDb, decrypt } = require('./index');
-
-// ========== 联系方式解锁 ==========
 
 function createContactUnlock(viewerId, targetId) {
   const database = getDb();
   const createdAt = Date.now();
   try {
     const stmt = database.prepare(
-      'INSERT OR IGNORE INTO contact_unlocks (viewer_id, target_id, status, created_at) VALUES (?, ?, ?, ?)'
+      'INSERT INTO contact_unlocks (viewer_id, target_id, status, created_at) VALUES ($1, $2, $3, $4) ON CONFLICT(viewer_id, target_id) DO NOTHING'
     );
     stmt.run(viewerId, targetId, 'pending', createdAt);
     return true;
@@ -24,7 +18,7 @@ function unlockContact(viewerId, targetId, adminNote = '') {
   const database = getDb();
   const unlockedAt = Date.now();
   const stmt = database.prepare(
-    'INSERT OR REPLACE INTO contact_unlocks (viewer_id, target_id, status, created_at, unlocked_at, admin_note) VALUES (?, ?, ?, ?, ?, ?)'
+    'INSERT INTO contact_unlocks (viewer_id, target_id, status, created_at, unlocked_at, admin_note) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT(viewer_id, target_id) DO UPDATE SET status = EXCLUDED.status, unlocked_at = EXCLUDED.unlocked_at, admin_note = EXCLUDED.admin_note'
   );
   stmt.run(viewerId, targetId, 'unlocked', Date.now(), unlockedAt, adminNote);
   return true;
@@ -33,7 +27,7 @@ function unlockContact(viewerId, targetId, adminNote = '') {
 function checkContactUnlocked(viewerId, targetId) {
   const database = getDb();
   const stmt = database.prepare(
-    'SELECT status FROM contact_unlocks WHERE viewer_id = ? AND target_id = ? AND status = ?'
+    'SELECT status FROM contact_unlocks WHERE viewer_id = $1 AND target_id = $2 AND status = $3'
   );
   const result = stmt.get(viewerId, targetId, 'unlocked');
   return !!result;
@@ -42,7 +36,7 @@ function checkContactUnlocked(viewerId, targetId) {
 function getUnlocksByTarget(targetId) {
   const database = getDb();
   const stmt = database.prepare(
-    'SELECT * FROM contact_unlocks WHERE target_id = ? ORDER BY created_at DESC'
+    'SELECT * FROM contact_unlocks WHERE target_id = $1 ORDER BY created_at DESC'
   );
   return stmt.all(targetId);
 }
@@ -61,21 +55,19 @@ function getAllUnlockRecords() {
   return stmt.all();
 }
 
-// ========== 联系方式解锁请求（带支付凭证） ==========
-
 function addContactUnlockRequest(viewerId, targetId, proofPath, method, amount) {
   const database = getDb();
   const now = Date.now();
   try {
     const stmt = database.prepare(
-      'INSERT INTO contact_unlocks (viewer_id, target_id, proof_path, method, amount, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
+      'INSERT INTO contact_unlocks (viewer_id, target_id, proof_path, method, amount, status, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7)'
     );
     stmt.run(viewerId, targetId, proofPath, method || 'manual', amount || 9.9, 'pending', now);
-    return { success: true, id: database.lastInsertRowid };
+    return { success: true, id: database.prepare('SELECT LASTVAL() as id').get().id };
   } catch (e) {
     try {
       const stmt = database.prepare(
-        'UPDATE contact_unlocks SET proof_path = ?, method = ?, amount = ?, status = ?, created_at = ? WHERE viewer_id = ? AND target_id = ?'
+        'UPDATE contact_unlocks SET proof_path = $1, method = $2, amount = $3, status = $4, created_at = $5 WHERE viewer_id = $6 AND target_id = $7'
       );
       stmt.run(proofPath, method || 'manual', amount || 9.9, 'pending', now, viewerId, targetId);
       return { success: true, updated: true };
@@ -109,7 +101,7 @@ function getAllContactUnlockRequests() {
 function approveContactUnlockRequest(id, adminNote = '') {
   const database = getDb();
   const stmt = database.prepare(
-    'UPDATE contact_unlocks SET status = ?, unlocked_at = ?, admin_note = ? WHERE id = ?'
+    'UPDATE contact_unlocks SET status = $1, unlocked_at = $2, admin_note = $3 WHERE id = $4'
   );
   stmt.run('unlocked', Date.now(), adminNote, id);
   return true;
@@ -118,7 +110,7 @@ function approveContactUnlockRequest(id, adminNote = '') {
 function rejectContactUnlockRequest(id, adminNote = '') {
   const database = getDb();
   const stmt = database.prepare(
-    'UPDATE contact_unlocks SET status = ?, admin_note = ? WHERE id = ?'
+    'UPDATE contact_unlocks SET status = $1, admin_note = $2 WHERE id = $3'
   );
   stmt.run('rejected', adminNote, id);
   return true;
@@ -126,17 +118,15 @@ function rejectContactUnlockRequest(id, adminNote = '') {
 
 function deleteContactUnlockRequest(id) {
   const database = getDb();
-  const stmt = database.prepare('DELETE FROM contact_unlocks WHERE id = ?');
+  const stmt = database.prepare('DELETE FROM contact_unlocks WHERE id = $1');
   stmt.run(id);
   return true;
 }
 
-// ========== 支付订单 ==========
-
 function addPaymentOrder(order) {
   const database = getDb();
   const stmt = database.prepare(
-    'INSERT INTO payment_orders (order_id, user_id, amount, channel, status, created_at) VALUES (?, ?, ?, ?, ?, ?)'
+    'INSERT INTO payment_orders (order_id, user_id, amount, channel, status, created_at) VALUES ($1, $2, $3, $4, $5, $6)'
   );
   stmt.run(order.order_id, order.user_id, order.amount, order.channel, 'pending', Date.now());
   return true;
@@ -144,33 +134,31 @@ function addPaymentOrder(order) {
 
 function getPaymentOrder(orderId) {
   const database = getDb();
-  const stmt = database.prepare('SELECT * FROM payment_orders WHERE order_id = ?');
+  const stmt = database.prepare('SELECT * FROM payment_orders WHERE order_id = $1');
   return stmt.get(orderId);
 }
 
 function updatePaymentOrder(orderId, status) {
   const database = getDb();
   const stmt = database.prepare(
-    'UPDATE payment_orders SET status = ?, paid_at = ? WHERE order_id = ?'
+    'UPDATE payment_orders SET status = $1, paid_at = $2 WHERE order_id = $3'
   );
   stmt.run(status, status === 'paid' ? Date.now() : null, orderId);
   return true;
 }
 
-// ========== 保证金 ==========
-
 function approveDepositByUserId(userId, amount) {
   const database = getDb();
-  const existingStmt = database.prepare('SELECT * FROM deposits WHERE user_id = ? ORDER BY created_at DESC LIMIT 1');
+  const existingStmt = database.prepare('SELECT * FROM deposits WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1');
   const existing = existingStmt.get(userId);
   if (existing) {
     const updateStmt = database.prepare(
-      'UPDATE deposits SET status = ?, approved_at = ?, admin_note = ? WHERE id = ?'
+      'UPDATE deposits SET status = $1, approved_at = $2, admin_note = $3 WHERE id = $4'
     );
     updateStmt.run('approved', Date.now(), '自动支付通过', existing.id);
   } else {
     const insertStmt = database.prepare(
-      'INSERT INTO deposits (user_id, amount, status, created_at, approved_at, admin_note) VALUES (?, ?, ?, ?, ?, ?)'
+      'INSERT INTO deposits (user_id, amount, status, created_at, approved_at, admin_note) VALUES ($1, $2, $3, $4, $5, $6)'
     );
     insertStmt.run(userId, amount, 'approved', Date.now(), Date.now(), '自动支付通过');
   }
@@ -184,7 +172,7 @@ function getAllDeposits(status = null) {
     LEFT JOIN users u ON d.user_id = u.user_id`;
   const params = [];
   if (status) {
-    sql += ' WHERE d.status = ?';
+    sql += ' WHERE d.status = $1';
     params.push(status);
   }
   sql += ' ORDER BY d.created_at DESC';
@@ -195,7 +183,7 @@ function getAllDeposits(status = null) {
 function updateDepositStatus(depositId, status, adminNote = '') {
   const database = getDb();
   const stmt = database.prepare(
-    'UPDATE deposits SET status = ?, admin_note = ?, approved_at = ? WHERE id = ?'
+    'UPDATE deposits SET status = $1, admin_note = $2, approved_at = $3 WHERE id = $4'
   );
   stmt.run(status, adminNote || '', status === 'approved' ? Date.now() : null, depositId);
   return true;
@@ -204,7 +192,7 @@ function updateDepositStatus(depositId, status, adminNote = '') {
 function addDeposit(userId, amount, proofPath) {
   const database = getDb();
   const stmt = database.prepare(
-    'INSERT INTO deposits (user_id, amount, proof_path, status, created_at) VALUES (?, ?, ?, ?, ?)'
+    'INSERT INTO deposits (user_id, amount, proof_path, status, created_at) VALUES ($1, $2, $3, $4, $5)'
   );
   stmt.run(userId, amount, proofPath, 'pending', new Date().toISOString());
   return true;
@@ -212,19 +200,19 @@ function addDeposit(userId, amount, proofPath) {
 
 function getMyDeposit(userId) {
   const database = getDb();
-  const stmt = database.prepare('SELECT * FROM deposits WHERE user_id = ? ORDER BY created_at DESC LIMIT 1');
+  const stmt = database.prepare('SELECT * FROM deposits WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1');
   return stmt.get(userId);
 }
 
 function approveDepositsBatch(ids, adminNote) {
   const database = getDb();
   const now = new Date().toISOString();
-  const stmt = database.prepare(
-    'UPDATE deposits SET status = \'approved\', approved_at = ?, admin_note = ? WHERE id = ? AND status = \'pending\''
-  );
   let successCount = 0;
   for (const id of ids) {
-    const result = stmt.run(now, adminNote || '审核通过', id);
+    const stmt = database.prepare(
+      'UPDATE deposits SET status = $1, approved_at = $2, admin_note = $3 WHERE id = $4 AND status = $5'
+    );
+    const result = stmt.run('approved', now, adminNote || '审核通过', id, 'pending');
     if (result && result.changes > 0) successCount++;
   }
   return successCount;
@@ -233,12 +221,12 @@ function approveDepositsBatch(ids, adminNote) {
 function rejectDepositsBatch(ids, adminNote) {
   const database = getDb();
   const now = new Date().toISOString();
-  const stmt = database.prepare(
-    'UPDATE deposits SET status = \'rejected\', approved_at = ?, admin_note = ? WHERE id = ? AND status = \'pending\''
-  );
   let successCount = 0;
   for (const id of ids) {
-    const result = stmt.run(now, adminNote || '审核未通过', id);
+    const stmt = database.prepare(
+      'UPDATE deposits SET status = $1, approved_at = $2, admin_note = $3 WHERE id = $4 AND status = $5'
+    );
+    const result = stmt.run('rejected', now, adminNote || '审核未通过', id, 'pending');
     if (result && result.changes > 0) successCount++;
   }
   return successCount;
@@ -246,7 +234,7 @@ function rejectDepositsBatch(ids, adminNote) {
 
 function getPaymentOrdersByUser(userId) {
   const database = getDb();
-  const stmt = database.prepare('SELECT * FROM payment_orders WHERE user_id = ? ORDER BY created_at DESC');
+  const stmt = database.prepare('SELECT * FROM payment_orders WHERE user_id = $1 ORDER BY created_at DESC');
   return stmt.all(userId);
 }
 

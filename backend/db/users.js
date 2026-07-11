@@ -1,12 +1,5 @@
-// ============================================================
-// 数据访问层 - 用户相关（纯 SQL，无业务逻辑）
-// 职责：仅负责 users 表 / auth_users 表的增删改查
-// 所有函数只做一件事：执行 SQL，返回原始数据
-// ============================================================
-
 const { getDb, encrypt, decrypt } = require('./index');
 
-// 用户表的所有字段（用于 INSERT / UPDATE 的映射）
 const ALL_FIELDS = [
   'id', 'user_id', 'deposit', 'created_at', 'name', 'gender', 'age', 'height', 'weight',
   'skin_tone', 'zodiac', 'blood_type', 'city', 'marriage', 'children', 'education', 'job',
@@ -16,7 +9,6 @@ const ALL_FIELDS = [
   'avatar'
 ];
 
-// 将前端 JSON 对象转换为数据库行（处理加密、字段映射）
 function jsonToDbRow(jsonRow) {
   const data = jsonRow.data || {};
   const extraData = {};
@@ -69,7 +61,6 @@ function jsonToDbRow(jsonRow) {
   ];
 }
 
-// 将数据库行转换为前端 JSON 对象（处理解密、字段映射）
 function dbRowToJson(row) {
   if (!row) return null;
   const statusVal = typeof row.status !== 'undefined' ? row.status : 'approved';
@@ -120,13 +111,11 @@ function dbRowToJson(row) {
   };
 }
 
-// ========== users 表 CRUD ==========
-
 function getAllUsers(page = 1, limit = 20) {
   const database = getDb();
   const offset = (page - 1) * limit;
   const stmt = database.prepare(
-    `SELECT ${ALL_FIELDS.join(', ')}, status FROM users ORDER BY created_at DESC LIMIT ? OFFSET ?`
+    `SELECT ${ALL_FIELDS.join(', ')}, status FROM users ORDER BY created_at DESC LIMIT $1 OFFSET $2`
   );
   return stmt.all(limit, offset).map(dbRowToJson);
 }
@@ -139,7 +128,7 @@ function getUserCount() {
 function getUserById(id) {
   const database = getDb();
   const stmt = database.prepare(
-    `SELECT ${ALL_FIELDS.join(', ')}, status FROM users WHERE id = ?`
+    `SELECT ${ALL_FIELDS.join(', ')}, status FROM users WHERE id = $1`
   );
   const row = stmt.get(id);
   return row ? dbRowToJson(row) : null;
@@ -148,7 +137,7 @@ function getUserById(id) {
 function getUsersByUserId(userId) {
   const database = getDb();
   const stmt = database.prepare(
-    `SELECT ${ALL_FIELDS.join(', ')}, status FROM users WHERE user_id = ? ORDER BY created_at DESC`
+    `SELECT ${ALL_FIELDS.join(', ')}, status FROM users WHERE user_id = $1 ORDER BY created_at DESC`
   );
   return stmt.all(userId).map(dbRowToJson);
 }
@@ -156,7 +145,7 @@ function getUsersByUserId(userId) {
 function addUser(jsonRow) {
   const database = getDb();
   const values = jsonToDbRow(jsonRow);
-  const placeholders = ALL_FIELDS.map(() => '?').join(', ');
+  const placeholders = ALL_FIELDS.map((_, i) => `$${i + 1}`).join(', ');
   const stmt = database.prepare(`INSERT INTO users (${ALL_FIELDS.join(', ')}) VALUES (${placeholders})`);
   stmt.run(...values);
   return jsonRow;
@@ -165,44 +154,43 @@ function addUser(jsonRow) {
 function updateUser(id, jsonRow) {
   const database = getDb();
   const values = jsonToDbRow({ ...jsonRow, id });
-  const updateFields = ALL_FIELDS.slice(2).map(f => f + ' = ?').join(', ');
+  const updateFields = ALL_FIELDS.slice(2).map((f, i) => f + ' = $' + (i + 1)).join(', ');
   const updateValues = values.slice(2);
   updateValues.push(id);
-  const stmt = database.prepare(`UPDATE users SET ${updateFields} WHERE id = ?`);
+  const stmt = database.prepare(`UPDATE users SET ${updateFields} WHERE id = $${ALL_FIELDS.length - 1}`);
   stmt.run(...updateValues);
   return jsonRow;
 }
 
 function deleteUser(id, ownerUserId, isAdmin = false) {
   const database = getDb();
-  const user = database.prepare('SELECT user_id FROM users WHERE id = ?').get(id);
+  const user = database.prepare('SELECT user_id FROM users WHERE id = $1').get(id);
   if (!user) return false;
   if (!isAdmin) {
     if (!user.user_id) return false;
     if (user.user_id !== ownerUserId) return false;
   }
-  // 清理外键关联数据
-  database.prepare('DELETE FROM user_ratings WHERE rater_id = ? OR rated_id = ?').run(id, id);
-  database.prepare('DELETE FROM user_reports WHERE reporter_id = ? OR reported_id = ?').run(id, id);
+  database.prepare('DELETE FROM user_ratings WHERE rater_id = $1 OR rated_id = $2').run(id, id);
+  database.prepare('DELETE FROM user_reports WHERE reporter_id = $1 OR reported_id = $2').run(id, id);
   if (user.user_id) {
-    database.prepare('DELETE FROM user_custom_fields WHERE user_id = ?').run(user.user_id);
+    database.prepare('DELETE FROM user_custom_fields WHERE user_id = $1').run(user.user_id);
   }
-  const stmt = database.prepare('DELETE FROM users WHERE id = ?');
+  const stmt = database.prepare('DELETE FROM users WHERE id = $1');
   stmt.run(id);
   return true;
 }
 
 function batchSaveUsers(jsonRows) {
   const database = getDb();
-  const placeholders = ALL_FIELDS.map(() => '?').join(', ');
+  const placeholders = ALL_FIELDS.map((_, i) => `$${i + 1}`).join(', ');
   const insertStmt = database.prepare(`INSERT INTO users (${ALL_FIELDS.join(', ')}) VALUES (${placeholders})`);
-  const updateFields = ALL_FIELDS.slice(2).map(f => f + ' = ?').join(', ');
-  const updateStmt = database.prepare(`UPDATE users SET ${updateFields} WHERE id = ?`);
+  const updateFields = ALL_FIELDS.slice(2).map((f, i) => f + ' = $' + (i + 1)).join(', ');
+  const updateStmt = database.prepare(`UPDATE users SET ${updateFields} WHERE id = $${ALL_FIELDS.length - 1}`);
 
   const transaction = database.transaction(() => {
     for (const jsonRow of jsonRows) {
       if (jsonRow.id) {
-        const existing = database.prepare('SELECT id FROM users WHERE id = ?').get(jsonRow.id);
+        const existing = database.prepare('SELECT id FROM users WHERE id = $1').get(jsonRow.id);
         if (existing) {
           const values = jsonToDbRow({ ...jsonRow });
           const updateValues = values.slice(2);
@@ -217,18 +205,16 @@ function batchSaveUsers(jsonRows) {
   transaction();
 }
 
-// ========== 用户审核 ==========
-
 function approveUser(id) {
   const database = getDb();
-  const stmt = database.prepare('UPDATE users SET status = ? WHERE id = ?');
+  const stmt = database.prepare('UPDATE users SET status = $1 WHERE id = $2');
   stmt.run('approved', id);
   return true;
 }
 
 function rejectUser(id) {
   const database = getDb();
-  const stmt = database.prepare('UPDATE users SET status = ? WHERE id = ?');
+  const stmt = database.prepare('UPDATE users SET status = $1 WHERE id = $2');
   stmt.run('rejected', id);
   return true;
 }
@@ -245,8 +231,6 @@ function getPendingUsers() {
   }
 }
 
-// ========== 用户搜索 ==========
-
 function searchUsers(criteria, page = 1, limit = 20) {
   const database = getDb();
   const conditions = [];
@@ -256,45 +240,38 @@ function searchUsers(criteria, page = 1, limit = 20) {
   const addLikeOrExact = (field, value) => {
     if (!value) return;
     if (isExact) {
-      conditions.push(`${field} = ?`);
+      conditions.push(`${field} = $${params.length + 1}`);
       params.push(value);
     } else {
-      conditions.push(`${field} LIKE ?`);
+      conditions.push(`${field} LIKE $${params.length + 1}`);
       params.push('%' + escapeLikeString(value) + '%');
     }
   };
 
   if (criteria.gender) {
-    conditions.push('gender = ?');
+    conditions.push(`gender = $${params.length + 1}`);
     params.push(criteria.gender);
   }
   addLikeOrExact('city', criteria.city);
   if (criteria.age_min) {
-    conditions.push('CAST(age AS INTEGER) >= ?');
+    conditions.push(`CAST(age AS INTEGER) >= $${params.length + 1}`);
     params.push(parseInt(criteria.age_min));
   }
   if (criteria.age_max) {
-    conditions.push('CAST(age AS INTEGER) <= ?');
+    conditions.push(`CAST(age AS INTEGER) <= $${params.length + 1}`);
     params.push(parseInt(criteria.age_max));
   }
+  const contactFilter = criteria.contact || null;
+  let keywordContactFilter = null;
+
   addLikeOrExact('education', criteria.education);
   addLikeOrExact('income', criteria.income);
   addLikeOrExact('name', criteria.name);
-  addLikeOrExact('contact', criteria.contact);
   if (criteria.keyword) {
-    if (isExact) {
-      conditions.push('(name = ? OR city = ? OR contact = ?)');
-      params.push(criteria.keyword, criteria.keyword, criteria.keyword);
-    } else {
-      conditions.push('(name LIKE ? OR city LIKE ? OR contact LIKE ?)');
-      const kw = '%' + escapeLikeString(criteria.keyword) + '%';
-      params.push(kw, kw, kw);
-    }
+    keywordContactFilter = criteria.keyword;
   }
 
-  // 自定义字段筛选（EAV 键值表）
-  // 每个自定义条件独立查键值表取 user_id 集合，多条件取交集
-  let customFieldUserIds = null; // null 表示尚未限制
+  let customFieldUserIds = null;
   if (Array.isArray(criteria.custom_fields) && criteria.custom_fields.length > 0) {
     for (const cf of criteria.custom_fields) {
       if (!cf.field_key || !cf.field_value) continue;
@@ -303,23 +280,62 @@ function searchUsers(criteria, page = 1, limit = 20) {
       if (customFieldUserIds === null) {
         customFieldUserIds = idSet;
       } else {
-        // 多条件取交集
         customFieldUserIds = new Set([...customFieldUserIds].filter(id => idSet.has(id)));
       }
     }
-    // 如果交集为空，直接返回空结果
     if (customFieldUserIds !== null && customFieldUserIds.size === 0) {
       return { data: [], count: 0 };
     }
   }
 
   const whereClause = conditions.length > 0 ? 'WHERE ' + conditions.join(' AND ') : '';
-  const offset = (page - 1) * limit;
+  const needContactFilter = contactFilter || keywordContactFilter;
 
-  // 如果有自定义字段过滤，需要额外限制 user_id
+  if (needContactFilter) {
+    let allRows;
+    if (customFieldUserIds !== null) {
+      const idList = [...customFieldUserIds];
+      const placeholders = idList.map((_, i) => `$${params.length + i + 1}`).join(',');
+      const userFilter = `user_id IN (${placeholders})`;
+      const fullWhere = whereClause ? whereClause + ' AND ' + userFilter : 'WHERE ' + userFilter;
+      params.push(...idList);
+      allRows = database.prepare(`SELECT ${ALL_FIELDS.join(', ')}, status FROM users ${fullWhere} ORDER BY created_at DESC`).all(...params);
+    } else {
+      allRows = database.prepare(`SELECT ${ALL_FIELDS.join(', ')}, status FROM users ${whereClause} ORDER BY created_at DESC`).all(...params);
+    }
+
+    const filtered = allRows.filter(row => {
+      const plainContact = decrypt(row.contact) || '';
+      if (contactFilter && keywordContactFilter) {
+        const contactMatch = isExact
+          ? plainContact === contactFilter
+          : plainContact.includes(contactFilter);
+        const kwMatch = (row.name && (isExact ? row.name === keywordContactFilter : row.name.includes(keywordContactFilter)))
+          || (row.city && (isExact ? row.city === keywordContactFilter : row.city.includes(keywordContactFilter)))
+          || (isExact ? plainContact === keywordContactFilter : plainContact.includes(keywordContactFilter));
+        return contactMatch && kwMatch;
+      }
+      if (contactFilter) {
+        return isExact ? plainContact === contactFilter : plainContact.includes(contactFilter);
+      }
+      if (keywordContactFilter) {
+        const nameMatch = row.name && (isExact ? row.name === keywordContactFilter : row.name.includes(keywordContactFilter));
+        const cityMatch = row.city && (isExact ? row.city === keywordContactFilter : row.city.includes(keywordContactFilter));
+        const contactMatch = isExact ? plainContact === keywordContactFilter : plainContact.includes(keywordContactFilter);
+        return nameMatch || cityMatch || contactMatch;
+      }
+      return true;
+    }).map(dbRowToJson);
+
+    const count = filtered.length;
+    const offset = (page - 1) * limit;
+    const data = filtered.slice(offset, offset + limit);
+    return { data, count };
+  }
+
   if (customFieldUserIds !== null) {
     const idList = [...customFieldUserIds];
-    const placeholders = idList.map(() => '?').join(',');
+    const placeholders = idList.map((_, i) => `$${params.length + i + 1}`).join(',');
     const userFilter = `user_id IN (${placeholders})`;
     const fullWhere = whereClause
       ? whereClause + ' AND ' + userFilter
@@ -329,7 +345,7 @@ function searchUsers(criteria, page = 1, limit = 20) {
     const countSql = `SELECT COUNT(*) as count FROM users ${fullWhere}`;
     const count = database.prepare(countSql).get(...params).count;
 
-    const sql = `SELECT ${ALL_FIELDS.join(', ')}, status FROM users ${fullWhere} ORDER BY created_at DESC LIMIT ? OFFSET ?`;
+    const sql = `SELECT ${ALL_FIELDS.join(', ')}, status FROM users ${fullWhere} ORDER BY created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
     const data = database.prepare(sql).all(...params, limit, offset).map(dbRowToJson);
     return { data, count };
   }
@@ -337,7 +353,7 @@ function searchUsers(criteria, page = 1, limit = 20) {
   const countSql = `SELECT COUNT(*) as count FROM users ${whereClause}`;
   const count = database.prepare(countSql).get(...params).count;
 
-  const sql = `SELECT ${ALL_FIELDS.join(', ')}, status FROM users ${whereClause} ORDER BY created_at DESC LIMIT ? OFFSET ?`;
+  const sql = `SELECT ${ALL_FIELDS.join(', ')}, status FROM users ${whereClause} ORDER BY created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
   const data = database.prepare(sql).all(...params, limit, offset).map(dbRowToJson);
 
   return { data, count };
@@ -346,8 +362,6 @@ function searchUsers(criteria, page = 1, limit = 20) {
 function escapeLikeString(str) {
   return str.replace(/[%_\\]/g, '\\$&');
 }
-
-// ========== 统计 ==========
 
 function getUserStats() {
   const database = getDb();
@@ -365,21 +379,18 @@ function getUserStats() {
   };
 }
 
-// ========== 用户自定义字段（EAV 键值表） ==========
-
 function getUserCustomFields(userId) {
   const database = getDb();
   return database.prepare(
-    'SELECT field_key, field_value, created_at FROM user_custom_fields WHERE user_id = ? ORDER BY created_at'
+    'SELECT field_key, field_value, created_at FROM user_custom_fields WHERE user_id = $1 ORDER BY created_at'
   ).all(userId);
 }
 
 function setUserCustomField(userId, fieldKey, fieldValue) {
   const database = getDb();
   const now = Date.now();
-  // 用 INSERT OR REPLACE 实现 upsert（依赖 user_id + field_key 唯一索引）
   database.prepare(
-    'INSERT OR REPLACE INTO user_custom_fields (user_id, field_key, field_value, created_at) VALUES (?, ?, ?, ?)'
+    'INSERT INTO user_custom_fields (user_id, field_key, field_value, created_at) VALUES ($1, $2, $3, $4) ON CONFLICT(user_id, field_key) DO UPDATE SET field_value = EXCLUDED.field_value, created_at = EXCLUDED.created_at'
   ).run(userId, fieldKey.trim(), String(fieldValue).trim(), now);
   return { field_key: fieldKey.trim(), field_value: String(fieldValue).trim() };
 }
@@ -387,7 +398,7 @@ function setUserCustomField(userId, fieldKey, fieldValue) {
 function deleteUserCustomField(userId, fieldKey) {
   const database = getDb();
   const stmt = database.prepare(
-    'DELETE FROM user_custom_fields WHERE user_id = ? AND field_key = ?'
+    'DELETE FROM user_custom_fields WHERE user_id = $1 AND field_key = $2'
   );
   const result = stmt.run(userId, fieldKey);
   return result.changes > 0;
@@ -395,22 +406,21 @@ function deleteUserCustomField(userId, fieldKey) {
 
 function deleteUserCustomFields(userId) {
   const database = getDb();
-  database.prepare('DELETE FROM user_custom_fields WHERE user_id = ?').run(userId);
+  database.prepare('DELETE FROM user_custom_fields WHERE user_id = $1').run(userId);
 }
 
 function searchUsersByCustomField(fieldKey, fieldValue, isExact) {
   const database = getDb();
   if (isExact) {
     return database.prepare(
-      'SELECT DISTINCT user_id FROM user_custom_fields WHERE field_key = ? AND field_value = ?'
+      'SELECT DISTINCT user_id FROM user_custom_fields WHERE field_key = $1 AND field_value = $2'
     ).all(fieldKey, fieldValue).map(r => r.user_id);
   }
   return database.prepare(
-    "SELECT DISTINCT user_id FROM user_custom_fields WHERE field_key = ? AND field_value LIKE ?"
+    "SELECT DISTINCT user_id FROM user_custom_fields WHERE field_key = $1 AND field_value LIKE $2"
   ).all(fieldKey, '%' + escapeLikeString(fieldValue) + '%').map(r => r.user_id);
 }
 
-// 获取所有用户的自定义字段（批量，用于前端搜索集成）
 function getAllCustomFields() {
   const database = getDb();
   return database.prepare(

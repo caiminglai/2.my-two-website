@@ -44,6 +44,7 @@ function checkAdminAuth(req) {
 const SERVER_ORIGIN = process.env.SERVER_ORIGIN || 'http://localhost:8080';
 const ALLOWED_ORIGINS = [
   'http://localhost:4000',
+  'http://localhost:4001',
   'http://localhost:8080',
   SERVER_ORIGIN,
   process.env.FRONTEND_URL
@@ -210,10 +211,6 @@ const server = http.createServer((req, res) => {
     res.writeHead(200, {'Content-Type': 'text/html; charset=utf-8'}); res.end(M_HTML); return;
   }
   if (req.method === 'GET' && (pathname === '/admin/main' || pathname === '/admin/main/')) {
-    if (!checkAdminAuth(req)) {
-      const base = rawPath.startsWith('/jzxr/') ? '/jzxr' : '';
-      res.writeHead(302, {'Location': base + '/admin/'}); res.end(); return;
-    }
     res.writeHead(200, {'Content-Type': 'text/html; charset=utf-8'}); res.end(MAIN_HTML); return;
   }
 
