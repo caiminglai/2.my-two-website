@@ -119,7 +119,7 @@ function deleteUserVector(userId) {
 
 function getVectorStats() {
   const db = getDb();
-  return db.prepare(`
+  const result = db.prepare(`
     SELECT
       COUNT(*) as total_vectors,
       COUNT(DISTINCT user_id) as total_users,
@@ -127,6 +127,12 @@ function getVectorStats() {
       MAX(updated_at) as latest
     FROM user_vectors
   `).get();
+  return {
+    total_vectors: parseInt(result.total_vectors) || 0,
+    total_users: parseInt(result.total_users) || 0,
+    earliest: result.earliest,
+    latest: result.latest
+  };
 }
 
 module.exports = {

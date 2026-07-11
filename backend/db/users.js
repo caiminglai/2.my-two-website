@@ -122,7 +122,7 @@ function getAllUsers(page = 1, limit = 20) {
 
 function getUserCount() {
   const database = getDb();
-  return database.prepare('SELECT COUNT(*) as count FROM users').get().count;
+  return parseInt(database.prepare('SELECT COUNT(*) as count FROM users').get().count) || 0;
 }
 
 function getUserById(id) {
@@ -343,7 +343,7 @@ function searchUsers(criteria, page = 1, limit = 20) {
     params.push(...idList);
 
     const countSql = `SELECT COUNT(*) as count FROM users ${fullWhere}`;
-    const count = database.prepare(countSql).get(...params).count;
+    const count = parseInt(database.prepare(countSql).get(...params).count) || 0;
 
     const sql = `SELECT ${ALL_FIELDS.join(', ')}, status FROM users ${fullWhere} ORDER BY created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
     const data = database.prepare(sql).all(...params, limit, offset).map(dbRowToJson);
@@ -351,7 +351,7 @@ function searchUsers(criteria, page = 1, limit = 20) {
   }
 
   const countSql = `SELECT COUNT(*) as count FROM users ${whereClause}`;
-  const count = database.prepare(countSql).get(...params).count;
+  const count = parseInt(database.prepare(countSql).get(...params).count) || 0;
 
   const sql = `SELECT ${ALL_FIELDS.join(', ')}, status FROM users ${whereClause} ORDER BY created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
   const data = database.prepare(sql).all(...params, limit, offset).map(dbRowToJson);
@@ -372,9 +372,9 @@ function getUserStats() {
     ageDistribution[age] = (ageDistribution[age] || 0) + 1;
   }
   return {
-    total: database.prepare('SELECT COUNT(*) as count FROM users').get().count,
-    male: database.prepare("SELECT COUNT(*) as count FROM users WHERE gender = '男'").get().count,
-    female: database.prepare("SELECT COUNT(*) as count FROM users WHERE gender = '女'").get().count,
+    total: parseInt(database.prepare('SELECT COUNT(*) as count FROM users').get().count) || 0,
+    male: parseInt(database.prepare("SELECT COUNT(*) as count FROM users WHERE gender = '男'").get().count) || 0,
+    female: parseInt(database.prepare("SELECT COUNT(*) as count FROM users WHERE gender = '女'").get().count) || 0,
     ageDistribution
   };
 }

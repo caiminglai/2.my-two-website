@@ -24,7 +24,7 @@ function getAverageRating(ratedId) {
     'SELECT AVG(rating) as avg, COUNT(*) as count FROM user_ratings WHERE rated_id = $1'
   );
   const result = stmt.get(ratedId);
-  return { avg: parseFloat(result.avg) || 0, count: result.count || 0 };
+  return { avg: parseFloat(result.avg) || 0, count: parseInt(result.count) || 0 };
 }
 
 function checkUserRated(raterId, ratedId) {
