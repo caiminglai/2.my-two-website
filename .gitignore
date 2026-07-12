@@ -27,9 +27,9 @@ data/pg_data/
 # ===== 上传文件 =====
 uploads/
 
-# ===== 收款二维码（不提交）=====
-app/public/
-public/
+# ===== 收款二维码（已提交到仓库，用于接受捐赠）=====
+# app/public/
+# public/
 
 # ===== 日志 =====
 *.log
