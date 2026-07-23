@@ -57,7 +57,7 @@ npm run dev
 | 本地前端 | http://localhost:4000/jzxr |
 | 本地后端 | http://localhost:8080/api |
 | 管理后台 | http://localhost:8080/admin |
-| 生产环境 | https://your_other_domain.com/ |
+| 生产环境 | https://sparklove.cn/ |
 
 ## 核心功能
 

@@ -6,7 +6,7 @@ const BCRYPT_ROUNDS = parseInt(process.env.BCRYPT_ROUNDS) || 10;
 
 const pgConfig = {
   user: 'postgres',
-  password: process.env.PG_PASSWORD || 'MAliang@911023',
+  password: process.env.PG_PASSWORD || 'your_admin_password',
   host: process.env.PG_HOST || 'localhost',
   port: parseInt(process.env.PG_PORT) || 5432,
   database: process.env.PG_DATABASE || 'match_db'
