@@ -1,0 +1,96 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "🚀 本地调试 (npm run dev)",
+      "type": "shell",
+      "command": "npm run dev",
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "problemMatcher": [],
+      "detail": "启动开发服务器，自动热更新"
+    },
+    {
+      "label": "📦 打包构建 (npm run build)",
+      "type": "shell",
+      "command": "npm run build",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "problemMatcher": [],
+      "detail": "构建生产环境代码到 dist 目录"
+    },
+    {
+      "label": "🔍 代码检查 (npm run lint)",
+      "type": "shell",
+      "command": "npm run lint",
+      "group": "test",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "problemMatcher": [
+        "$eslint-stylish"
+      ],
+      "detail": "运行 ESLint 检查代码规范"
+    },
+    {
+      "label": "☁️ 部署到阿里云 (WinSCP上传)",
+      "type": "shell",
+      "command": "echo '请按以下步骤部署：' && echo '1. 确保已运行 npm run build' && echo '2. 打开 WinSCP' && echo '3. 连接到 your_server_ip' && echo '4. 上传 dist 文件夹到 /var/www/jzxr/app/dist/' && echo '5. 执行: sudo systemctl reload nginx'",
+      "group": "none",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "shared"
+      },
+      "problemMatcher": [],
+      "detail": "显示部署步骤提醒"
+    },
+    {
+      "label": "🔄 一键构建+部署",
+      "type": "shell",
+      "command": "npm run build && echo '✅ 构建完成，请手动上传到服务器'",
+      "group": "none",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "shared"
+      },
+      "problemMatcher": [],
+      "detail": "先构建，然后提示上传"
+    },
+    {
+      "label": "📊 查看项目信息",
+      "type": "shell",
+      "command": "echo '=== 精准匹配项目信息 ===' && echo '本地路径: E:\\website\\2.my-two-website' && echo '服务器: your_server_ip' && echo '部署路径: /var/www/jzxr/app/dist/' && echo '后端端口: 8080' && echo '域名: your_other_domain.com' && echo 'Nginx配置: /etc/nginx/conf.d/jzxr.conf' && echo 'PM2进程: jzxr-backend' && echo '' && echo '常用命令:' && echo '  pm2 restart jzxr-backend' && echo '  pm2 logs jzxr-backend' && echo '  sudo systemctl reload nginx'",
+      "group": "none",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "shared"
+      },
+      "problemMatcher": [],
+      "detail": "显示项目部署信息速查"
+    }
+  ]
+}

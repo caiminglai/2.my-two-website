@@ -61,7 +61,8 @@ coverage/
 *.pptx
 
 # ===== 编辑器/IDE =====
-.vscode/
+.vscode/*
+!.vscode/tasks.json
 .idea/
 *.swp
 *.swo
